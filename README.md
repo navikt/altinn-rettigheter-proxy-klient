@@ -1,7 +1,7 @@
 Altinnrettigheter-proxy-klient
 ==============================
 
-Biblioteket som tilbyr en klient til altinnrettigheter-proxy mot Altinn.
+Bibliotek som tilbyr en Http klient til altinn-rettigheter-proxy.
 
 # Komme i gang
 
@@ -13,8 +13,8 @@ Biblioteket importeres i klient applikasjon som følgende (eksempel med maven)
 ```
 <dependency>
   <groupId>no.nav.arbeidsgiver</groupId>
-  <artifactId>altinnrettigheter.proxy.klient</artifactId>
-  <version>${altinnrettigheter.proxy.klient.version}</version>
+  <artifactId>altinn-rettigheter-proxy-klient</artifactId>
+  <version>${altinn-rettigheter-proxy-klient.version}</version>
 </dependency>
 ```
 

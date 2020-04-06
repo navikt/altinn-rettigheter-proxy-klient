@@ -110,7 +110,6 @@ class AltinnrettigheterProxyKlient(
         val uriBuilder = UriComponentsBuilder
                 .fromUriString(config.proxy.url)
                 .pathSegment("organisasjoner")
-                .queryParam("ForceEIAuthentication")
                 .queryParam("serviceCode", serviceCode.value)
                 .queryParam("serviceEdition", serviceEdition.value)
 
@@ -128,9 +127,9 @@ class AltinnrettigheterProxyKlient(
                         "reportees"
                 )
                 .queryParam("ForceEIAuthentication")
+                .queryParam("subject", subject.value)
                 .queryParam("serviceCode", serviceCode.value)
                 .queryParam("serviceEdition", serviceEdition.value)
-                .queryParam("subject", subject.value)
         return uriBuilder.build().toUri()
     }
 

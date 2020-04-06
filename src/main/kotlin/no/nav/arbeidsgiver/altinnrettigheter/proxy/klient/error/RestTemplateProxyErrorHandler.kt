@@ -21,7 +21,7 @@ class RestTemplateProxyErrorHandler : DefaultResponseErrorHandler() {
 
         logger.warn("Mottok en feil fra kilde '${proxyResponseIError.kilde}' " +
                 "med status '${proxyResponseIError.httpStatus}' " +
-                "og melding ${proxyResponseIError.melding}")
+                "og melding '${proxyResponseIError.melding}'")
 
         if (proxyResponseIError.kilde == ALTINN) {
             throw AltinnException(proxyResponseIError)

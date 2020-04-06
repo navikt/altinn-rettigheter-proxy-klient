@@ -8,9 +8,16 @@ import java.io.InputStream
 class ProxyResponseIError(responseBody: ProxyResponseIErrorBody, val httpStatus: HttpStatus) {
 
     val melding: String = responseBody.message
-    val kilde: Kilde = Kilde.valueOf(responseBody.origin.toUpperCase())
 
-    data class ProxyResponseIErrorBody(val message: String, val origin: String)
+    val kilde: Kilde = try {
+        Kilde.valueOf(responseBody.origin.toUpperCase())
+    } catch (e: Exception) {
+        Kilde.PROXY_KLIENT
+    }
+
+    data class ProxyResponseIErrorBody(val message: String, val origin: String) {
+        constructor(message: String, kilde: Kilde) : this(message, origin = kilde.verdi)
+    }
 
     companion object {
         fun parse(body: InputStream, httpStatus: HttpStatus): ProxyResponseIError {
@@ -24,7 +31,9 @@ class ProxyResponseIError(responseBody: ProxyResponseIErrorBody, val httpStatus:
             return try {
                 mapper.readValue(inputAsString)
             } catch (e: Exception) {
-                ProxyResponseIErrorBody("Uhåndtert feil", "ALTINN_RETTIGHETER_PROXY")
+                ProxyResponseIErrorBody(
+                        "Uhåndtert feil: ${e.message}",
+                        Kilde.PROXY_KLIENT)
             }
         }
     }
@@ -32,7 +41,7 @@ class ProxyResponseIError(responseBody: ProxyResponseIErrorBody, val httpStatus:
     enum class Kilde(val verdi: String) {
         ALTINN("ALTINN"),
         PROXY("PROXY"),
-        ANNET("ANNET")
+        PROXY_KLIENT("PROXY_KLIENT")
     }
 }
 

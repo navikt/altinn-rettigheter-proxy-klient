@@ -20,9 +20,6 @@ class AltinnrettigheterProxyKlient(
         restTemplateBuilder: RestTemplateBuilder
 ) {
 
-    private val CORRELATION_ID_HEADER_NAME = "X-Correlation-ID"
-    private val CONSUMER_ID_HEADER_NAME = "X-Consumer-ID"
-
     private val restTemplateBuilder = restTemplateBuilder
 
     fun hentOrganisasjoner(
@@ -147,15 +144,19 @@ class AltinnrettigheterProxyKlient(
 
     private fun getHeaderEntityForAltinn(): HttpEntity<HttpHeaders> {
         val headers = HttpHeaders()
+        headers[CORRELATION_ID_HEADER_NAME] = CorrelationIdUtils.getCorrelationId()
         headers["X-NAV-APIKEY"] = config.altinn.altinnApiGwApiKey
         headers["APIKEY"] = config.altinn.altinnApiKey
         headers[HttpHeaders.ACCEPT] = "${MediaType.APPLICATION_JSON.type}/${MediaType.APPLICATION_JSON.subtype}"
         return HttpEntity(headers)
     }
 
+
     companion object {
         private val logger = LoggerFactory.getLogger(RestTemplateProxyErrorHandler::class.java)
         const val ISSUER_SELVBETJENING = "selvbetjening"
+        const val CORRELATION_ID_HEADER_NAME = "X-Correlation-ID"
+        const val CONSUMER_ID_HEADER_NAME = "X-Consumer-ID"
     }
 }
 

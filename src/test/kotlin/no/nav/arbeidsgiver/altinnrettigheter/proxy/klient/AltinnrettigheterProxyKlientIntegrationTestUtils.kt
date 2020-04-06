@@ -2,24 +2,32 @@ package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient
 
 import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
-import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.*
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.CONSUMER_ID_HEADER_NAME
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.CORRELATION_ID_HEADER_NAME
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyResponseIError
 import org.apache.http.HttpStatus
 
 class AltinnrettigheterProxyKlientIntegrationTestUtils {
 
     companion object {
+        const val NON_EMPTY_STRING_REGEX = "^(?!\\s*\$).+"
 
         fun `altinn-rettigheter-proxy returnerer 200 OK og en liste med to AltinnReportee`(
                 serviceCode: String,
                 serviceEdition: String
         ): MappingBuilder {
-            return WireMock.get(WireMock.urlPathEqualTo("/proxy/organisasjoner"))
-                    .withHeader("Accept", WireMock.equalTo("application/json"))
+
+            return get(urlPathEqualTo("/proxy/organisasjoner"))
+                    .withHeader("Accept", equalTo("application/json"))
+                    .withHeader("Authorization", matching(NON_EMPTY_STRING_REGEX))
+                    .withHeader(CORRELATION_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
+                    .withHeader(CONSUMER_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
+
                     .withQueryParams(mapOf(
-                            "serviceCode" to WireMock.equalTo(serviceCode),
-                            "serviceEdition" to WireMock.equalTo(serviceEdition)
+                            "serviceCode" to equalTo(serviceCode),
+                            "serviceEdition" to equalTo(serviceEdition)
                     ))
                     .willReturn(`200 response med en liste av to reportees`())
         }
@@ -31,13 +39,13 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                 kilde: ProxyResponseIError.Kilde,
                 melding: String
         ): MappingBuilder {
-            return WireMock.get(WireMock.urlPathEqualTo("/proxy/organisasjoner"))
-                    .withHeader("Accept", WireMock.equalTo("application/json"))
+            return get(urlPathEqualTo("/proxy/organisasjoner"))
+                    .withHeader("Accept", equalTo("application/json"))
                     .withQueryParams(mapOf(
-                            "serviceCode" to WireMock.equalTo(serviceCode),
-                            "serviceEdition" to WireMock.equalTo(serviceEdition)
+                            "serviceCode" to equalTo(serviceCode),
+                            "serviceEdition" to equalTo(serviceEdition)
                     ))
-                    .willReturn(WireMock.aResponse()
+                    .willReturn(aResponse()
                             .withStatus(httpStatusKode)
                             .withHeader("Content-Type", "application/json")
                             .withBody("{" +
@@ -51,13 +59,13 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                 serviceCode: String,
                 serviceEdition: String
         ): MappingBuilder {
-            return WireMock.get(WireMock.urlPathEqualTo("/proxy/organisasjoner"))
-                    .withHeader("Accept", WireMock.equalTo("application/json"))
+            return get(urlPathEqualTo("/proxy/organisasjoner"))
+                    .withHeader("Accept", equalTo("application/json"))
                     .withQueryParams(mapOf(
-                            "serviceCode" to WireMock.equalTo(serviceCode),
-                            "serviceEdition" to WireMock.equalTo(serviceEdition)
+                            "serviceCode" to equalTo(serviceCode),
+                            "serviceEdition" to equalTo(serviceEdition)
                     ))
-                    .willReturn(WireMock.aResponse()
+                    .willReturn(aResponse()
                             .withStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR)
                             .withHeader("Content-Type", "application/json")
                             .withBody("{" +
@@ -68,17 +76,17 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
         }
 
         fun `altinn returnerer 200 OK og en liste med to AltinnReportee`(serviceCode: String, serviceEdition: String): MappingBuilder {
-            return WireMock.get(WireMock.urlPathEqualTo("/altinn/ekstern/altinn/api/serviceowner/reportees"))
-                    .withHeader("Accept", WireMock.equalTo("application/json"))
+            return get(urlPathEqualTo("/altinn/ekstern/altinn/api/serviceowner/reportees"))
+                    .withHeader("Accept", equalTo("application/json"))
                     .withQueryParams(mapOf(
-                            "serviceCode" to WireMock.equalTo(serviceCode),
-                            "serviceEdition" to WireMock.equalTo(serviceEdition)
+                            "serviceCode" to equalTo(serviceCode),
+                            "serviceEdition" to equalTo(serviceEdition)
                     ))
                     .willReturn(`200 response med en liste av to reportees`())
         }
 
         fun `200 response med en liste av to reportees`(): ResponseDefinitionBuilder? {
-            return WireMock.aResponse()
+            return aResponse()
                     .withStatus(200)
                     .withHeader("Content-Type", "application/json")
                     .withBody("[" +
@@ -106,13 +114,13 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                 serviceCode:
                 String, serviceEdition: String
         ): MappingBuilder {
-            return WireMock.get(WireMock.urlPathEqualTo("/altinn/ekstern/altinn/api/serviceowner/reportees"))
-                    .withHeader("Accept", WireMock.equalTo("application/json"))
+            return get(urlPathEqualTo("/altinn/ekstern/altinn/api/serviceowner/reportees"))
+                    .withHeader("Accept", equalTo("application/json"))
                     .withQueryParams(mapOf(
-                            "serviceCode" to WireMock.equalTo(serviceCode),
-                            "serviceEdition" to WireMock.equalTo(serviceEdition)
+                            "serviceCode" to equalTo(serviceCode),
+                            "serviceEdition" to equalTo(serviceEdition)
                     ))
-                    .willReturn(WireMock.aResponse()
+                    .willReturn(aResponse()
                             .withStatus(400)
                             .withHeader("Content-Type", "application/json")
                             .withBody("\"message\": \"${melding}\"")
@@ -124,10 +132,14 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                 serviceCode: String,
                 serviceEdition: String
         ): RequestPatternBuilder {
-            return WireMock.getRequestedFor(WireMock.urlPathEqualTo("/proxy/organisasjoner"))
-                    .withHeader("Accept", WireMock.containing("application/json"))
-                    .withQueryParam("serviceCode", WireMock.equalTo(serviceCode))
-                    .withQueryParam("serviceEdition", WireMock.equalTo(serviceEdition))
+            return getRequestedFor(urlPathEqualTo("/proxy/organisasjoner"))
+                    .withHeader("Accept", containing("application/json"))
+                    .withHeader("Accept", equalTo("application/json"))
+                    .withHeader("Authorization", matching(NON_EMPTY_STRING_REGEX))
+                    .withHeader(CORRELATION_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
+                    .withHeader(CONSUMER_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
+                    .withQueryParam("serviceCode", equalTo(serviceCode))
+                    .withQueryParam("serviceEdition", equalTo(serviceEdition))
         }
 
         fun `altinn mottar riktig request`(
@@ -135,12 +147,14 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                 serviceEdition: String,
                 subject: String
         ): RequestPatternBuilder {
-            return WireMock.getRequestedFor(WireMock.urlPathEqualTo("/altinn/ekstern/altinn/api/serviceowner/reportees"))
-                    .withHeader("Accept", WireMock.containing("application/json"))
-                    .withQueryParam("ForceEIAuthentication", WireMock.equalTo(""))
-                    .withQueryParam("subject", WireMock.equalTo(subject))
-                    .withQueryParam("serviceCode", WireMock.equalTo(serviceCode))
-                    .withQueryParam("serviceEdition", WireMock.equalTo(serviceEdition))
+            return getRequestedFor(urlPathEqualTo("/altinn/ekstern/altinn/api/serviceowner/reportees"))
+                    .withHeader("Accept", containing("application/json"))
+                    .withHeader(CORRELATION_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
+                    .withoutHeader("Authorization")
+                    .withQueryParam("ForceEIAuthentication", equalTo(""))
+                    .withQueryParam("subject", equalTo(subject))
+                    .withQueryParam("serviceCode", equalTo(serviceCode))
+                    .withQueryParam("serviceEdition", equalTo(serviceEdition))
         }
     }
 }

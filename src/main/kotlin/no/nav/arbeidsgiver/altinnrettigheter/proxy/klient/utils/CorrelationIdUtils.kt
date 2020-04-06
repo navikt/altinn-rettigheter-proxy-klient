@@ -6,7 +6,7 @@ import java.util.*
 class CorrelationIdUtils {
 
     companion object {
-        val CORRELATION_ID_MDC_NAME = "correlationId"
+        private const val CORRELATION_ID_MDC_NAME = "correlationId"
 
         fun getCorrelationId(): String {
 

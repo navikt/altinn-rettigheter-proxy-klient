@@ -22,13 +22,15 @@ Biblioteket importeres i klient applikasjon som følgende (eksempel med maven)
 
 Klienten instansieres slik: 
 ```java
+String consumerId = "navn-til-klient-applikasjon";
+
 AltinnrettigheterProxyKlientConfig config = 
     new AltinnrettigheterProxyKlientConfig(
-        new ProxyConfig("sykefraværsstatistikk", altinnProxyUrl),
+        new ProxyConfig(consumerId, altinnProxyUrl),
         new AltinnConfig(altinnUrl, altinnApikey, altinnAPIGWApikey)
     );
 
-    AltinnrettigheterProxyKlient klient = new AltinnrettigheterProxyKlient(config, restTemplateBuilder);
+AltinnrettigheterProxyKlient klient = new AltinnrettigheterProxyKlient(config, restTemplateBuilder);
 ```
 
 Listen av organisasjoner `AltinnReportee` en bruker har enkel rettighet i kan hentes på denne måten:

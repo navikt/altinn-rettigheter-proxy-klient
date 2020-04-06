@@ -227,9 +227,14 @@
         </dependency>
 
         <!-- OIDC Support -->
-        <dependency>
+        <!--dependency>
             <groupId>no.nav.security</groupId>
             <artifactId>oidc-spring-support</artifactId>
+            <version>${oidc-support.version}</version>
+        </dependency-->
+        <dependency>
+            <groupId>no.nav.security</groupId>
+            <artifactId>oidc-support</artifactId>
             <version>${oidc-support.version}</version>
         </dependency>
         <dependency>
@@ -257,12 +262,12 @@
             <version>${kotlin.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
+        <!--dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>3.1.0</version>
             <scope>test</scope>
-        </dependency>
+        </dependency-->
         <dependency>
             <groupId>com.github.tomakehurst</groupId>
             <artifactId>wiremock</artifactId>

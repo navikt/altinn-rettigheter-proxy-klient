@@ -3,10 +3,11 @@ package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.io.Serializable
 
+data class Subject(val value: String)
 data class ServiceCode(val value: String)
 data class ServiceEdition(val value: String)
 
-data class AltinnOrganisasjon(
+data class AltinnReportee(
         @JsonProperty("Name")
         val name: String,
         @JsonProperty("Type")

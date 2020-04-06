@@ -39,14 +39,17 @@ class AltinnrettigheterProxyKlient(
         return try {
             hentOrganisasjonerViaAltinnrettigheterProxy(tokenContext, serviceCode, serviceEdition)
         } catch (proxyException: AltinnrettigheterProxyException) {
-            logger.warn("Noe galt i proxy")
+            logger.warn("Fikk en feil i altinn-rettigheter-proxy med melding '${proxyException.message}'. " +
+                    "Gjør et nytt forsøk ved å kalle Altinn direkte.")
             hentOrganisasjonerIAltinn(subject, serviceCode, serviceEdition)
         } catch (altinnException: AltinnException) {
-            logger.warn("Fikk exception i Altinn med følgende meldingen '${altinnException.message}'. " +
-                    "Exceptions fra Altinn håndteres av klient applikasjon")
+            logger.warn("Fikk exception i Altinn med følgende melding '${altinnException.message}'. " +
+                    "Exception fra Altinn håndteres av klient applikasjon")
             throw altinnException
         } catch (exception: Exception) {
-            throw AltinnrettigheterProxyKlientUhåndtertException("Uhåndtert exception ved kall til proxy", exception)
+            logger.warn("Fikk exception med følgende melding '${exception.message}'. " +
+                    "Denne skal håndteres av klient applikasjon")
+            throw AltinnrettigheterProxyKlientException("Exception ved kall til proxy", exception)
         }
     }
 
@@ -103,7 +106,7 @@ class AltinnrettigheterProxyKlient(
                     "Feil ved fallback kall til Altinn",
                     exception
             )
-        } // TODO catch HttpStatusCodeException, RestClientException (?) eller bare la Exceptions propageres
+        }
     }
 
     private fun getAltinnRettigheterProxyURI(serviceCode: ServiceCode, serviceEdition: ServiceEdition): URI {

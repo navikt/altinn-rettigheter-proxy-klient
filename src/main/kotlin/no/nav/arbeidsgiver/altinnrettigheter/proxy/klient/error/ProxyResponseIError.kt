@@ -12,7 +12,7 @@ class ProxyResponseIError(responseBody: ProxyResponseIErrorBody, val httpStatus:
     val kilde: Kilde = try {
         Kilde.valueOf(responseBody.origin.toUpperCase())
     } catch (e: Exception) {
-        Kilde.PROXY_KLIENT
+        Kilde.ALTINN_RETTIGHETER_PROXY_KLIENT
     }
 
     data class ProxyResponseIErrorBody(val message: String, val origin: String) {
@@ -33,15 +33,15 @@ class ProxyResponseIError(responseBody: ProxyResponseIErrorBody, val httpStatus:
             } catch (e: Exception) {
                 ProxyResponseIErrorBody(
                         "Uhåndtert feil: ${e.message}",
-                        Kilde.PROXY_KLIENT)
+                        Kilde.ALTINN_RETTIGHETER_PROXY_KLIENT)
             }
         }
     }
 
     enum class Kilde(val verdi: String) {
         ALTINN("ALTINN"),
-        PROXY("PROXY"),
-        PROXY_KLIENT("PROXY_KLIENT")
+        ALTINN_RETTIGHETER_PROXY("ALTINN_RETTIGHETER_PROXY"),
+        ALTINN_RETTIGHETER_PROXY_KLIENT("ALTINN_RETTIGHETER_PROXY_KLIENT")
     }
 }
 

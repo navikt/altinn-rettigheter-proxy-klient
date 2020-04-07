@@ -85,7 +85,7 @@ class AltinnrettigheterProxyKlient(
                         response.body().toStream(),
                         response.statusCode
                 )
-                logger.warn("Mottok en feil fra kilde '${proxyErrorMedResponseBody.kilde}' " +
+                logger.info("Mottok en feil fra kilde '${proxyErrorMedResponseBody.kilde}' " +
                         "med status '${proxyErrorMedResponseBody.httpStatus}' " +
                         "og melding '${proxyErrorMedResponseBody.melding}'")
 
@@ -123,8 +123,16 @@ class AltinnrettigheterProxyKlient(
         }
         when (result) {
             is Result.Failure -> {
-                val melding = "Fallback kall mot Altinn feiler med HTTP kode '${response.statusCode}' " +
-                        "og melding '${response.responseMessage}'"
+                var melding = "Fallback kall mot Altinn feiler. "
+
+                melding += if (!response.isClientError && !response.isServerError) {
+                    "Med melding '${result.getException().message}' "
+                } else {
+                    "Med HTTP kode '${response.statusCode}' " +
+                            "og melding '${response.responseMessage}'"
+                }
+
+                logger.warn(melding)
                 throw AltinnrettigheterProxyKlientFallbackException(melding, result.getException())
             }
             is Result.Success -> return result.get()

@@ -205,13 +205,46 @@ class AltinnrettigheterProxyKlientIntegrationTest {
             fail("Skulle har fått en exception")
         } catch (e: Exception) {
             assertEquals(
-                    "Fallback kall mot Altinn feiler med HTTP kode '400' og melding 'Bad Request'",
+                    "Fallback kall mot Altinn feiler. Med HTTP kode '400' og melding 'Bad Request'",
                     e.message
             )
         }
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(INVALID_SERVICE_CODE, SERVICE_EDITION))
         wireMockServer.verify(`altinn mottar riktig request`(INVALID_SERVICE_CODE, SERVICE_EDITION, FNR_INNLOGGET_BRUKER))
+    }
+
+    @Test
+    fun `hentOrganisasjoner() kaster exception når ingen tjeneste svarer`() {
+        var klientMedProxyOgAltinnSomAldriSvarer = AltinnrettigheterProxyKlient(
+                AltinnrettigheterProxyKlientConfig(
+                        ProxyConfig(
+                                "klient-applikasjon",
+                                "http://localhost:13456/proxy-url-som-aldri-svarer"
+                        ),
+                        AltinnConfig(
+                                "http://localhost:13456/altinn-url-som-aldri-svarer",
+                                "test",
+                                "test"
+                        )
+                )
+        )
+
+        try {
+            klientMedProxyOgAltinnSomAldriSvarer.hentOrganisasjoner(
+                    tokenContext,
+                    Subject(FNR_INNLOGGET_BRUKER),
+                    ServiceCode(INVALID_SERVICE_CODE),
+                    ServiceEdition(SERVICE_EDITION)
+            )
+            fail("Skulle har fått en exception")
+        } catch (e: Exception) {
+            assertTrue(
+                    (e.message?: "Ingen melding").startsWith(
+                            "Fallback kall mot Altinn feiler. Med melding 'Connection refused"
+                    )
+            )
+        }
     }
 
 

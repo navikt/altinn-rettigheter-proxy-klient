@@ -2,6 +2,8 @@ package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.io.InputStream
 
 class ProxyErrorMedResponseBody(private val responseBody: ProxyResponseIErrorBody, val httpStatus: Int): ProxyError()  {
@@ -31,11 +33,14 @@ class ProxyErrorMedResponseBody(private val responseBody: ProxyResponseIErrorBod
             return try {
                 mapper.readValue(inputAsString)
             } catch (e: Exception) {
+                logger.info("Kunne ikke parse response body `${inputAsString}`. Årsak: '${e.message}'")
                 ProxyResponseIErrorBody(
-                        "Uhåndtert feil: ${e.message}",
+                        "Uhåndtert feil i proxy",
                         Kilde.ALTINN_RETTIGHETER_PROXY_KLIENT)
             }
         }
+
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java)
     }
 }
 

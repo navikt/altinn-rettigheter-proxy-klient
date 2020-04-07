@@ -30,11 +30,13 @@
     <properties>
         <java.version>11</java.version>
         <kotlin.version>1.3.61</kotlin.version>
+        <fuel.version>2.2.1</fuel.version>
+        <jackson-module-kotlin.version>2.9.9</jackson-module-kotlin.version>
         <oidc-support.version>0.2.18</oidc-support.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.11</maven.compiler.source>
         <maven.compiler.target>1.11</maven.compiler.target>
-        <fuel.version>2.2.1</fuel.version>
+        <maven-assembly-plugin.version>3.1.1</maven-assembly-plugin.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <distributionManagement>
@@ -147,6 +149,25 @@
                 </execution>
               </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>${maven-assembly-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -217,30 +238,25 @@
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-kotlin</artifactId>
-            <version>2.9.8</version>
+            <version>${jackson-module-kotlin.version}</version>
         </dependency>
 
         <!-- Fuel Http Client -->
         <dependency>
             <groupId>com.github.kittinunf.fuel</groupId>
             <artifactId>fuel</artifactId>
-            <version>2.2.1</version>
+            <version>${fuel.version}</version>
         </dependency>
         <dependency>
             <groupId>com.github.kittinunf.fuel</groupId>
             <artifactId>fuel-jackson</artifactId>
-            <version>2.2.1</version>
+            <version>${fuel.version}</version>
         </dependency>
 
         <!-- OIDC Support -->
         <dependency>
             <groupId>no.nav.security</groupId>
             <artifactId>oidc-support</artifactId>
-            <version>${oidc-support.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>no.nav.security</groupId>
-            <artifactId>oidc-test-support</artifactId>
             <version>${oidc-support.version}</version>
         </dependency>
 

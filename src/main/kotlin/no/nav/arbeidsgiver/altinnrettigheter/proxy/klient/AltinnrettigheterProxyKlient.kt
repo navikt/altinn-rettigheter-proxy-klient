@@ -30,11 +30,11 @@ class AltinnrettigheterProxyKlient(
         }
 
         return try {
-            hentOrganisasjonerViaAltinnrettigheterProxyWithFuel(tokenContext, serviceCode, serviceEdition)
+            hentOrganisasjonerViaAltinnrettigheterProxy(tokenContext, serviceCode, serviceEdition)
         } catch (proxyException: AltinnrettigheterProxyException) {
             logger.warn("Fikk en feil i altinn-rettigheter-proxy med melding '${proxyException.message}'. " +
                     "Gjør et nytt forsøk ved å kalle Altinn direkte.")
-            hentOrganisasjonerIAltinnWithFuel(subject, serviceCode, serviceEdition)
+            hentOrganisasjonerIAltinn(subject, serviceCode, serviceEdition)
         } catch (altinnException: AltinnException) {
             logger.warn("Fikk exception i Altinn med følgende melding '${altinnException.message}'. " +
                     "Exception fra Altinn håndteres av klient applikasjon")
@@ -47,7 +47,7 @@ class AltinnrettigheterProxyKlient(
     }
 
 
-    private fun hentOrganisasjonerViaAltinnrettigheterProxyWithFuel(
+    private fun hentOrganisasjonerViaAltinnrettigheterProxy(
             tokenContext: TokenContext,
             serviceCode: ServiceCode,
             serviceEdition: ServiceEdition
@@ -57,9 +57,9 @@ class AltinnrettigheterProxyKlient(
                 "serviceEdition" to serviceEdition.value
         )
 
-        var path = config.proxy.url + "/organisasjoner"
-
-        val (_, response, result) = with(path.httpGet(parameters)) {
+        val (_, response, result) = with(
+                getAltinnrettigheterProxyURL(config.proxy.url).httpGet(parameters)
+        ) {
             authentication().bearer(tokenContext.idToken)
             headers[CORRELATION_ID_HEADER_NAME] = CorrelationIdUtils.getCorrelationId()
             headers[CONSUMER_ID_HEADER_NAME] = config.proxy.consumerId
@@ -86,7 +86,7 @@ class AltinnrettigheterProxyKlient(
         }
     }
 
-    private fun hentOrganisasjonerIAltinnWithFuel(
+    private fun hentOrganisasjonerIAltinn(
             subject: Subject,
             serviceCode: ServiceCode,
             serviceEdition: ServiceEdition
@@ -98,9 +98,9 @@ class AltinnrettigheterProxyKlient(
                 "serviceEdition" to serviceEdition.value
         )
 
-        var path = config.altinn.url + "/ekstern/altinn/api/serviceowner/reportees"
-
-        val (_, response, result) = with(path.httpGet(parameters)) {
+        val (_, response, result) = with(
+                getAltinnURL(config.altinn.url).httpGet(parameters)
+        ) {
             headers[CORRELATION_ID_HEADER_NAME] = CorrelationIdUtils.getCorrelationId()
             headers["X-NAV-APIKEY"] = config.altinn.altinnApiGwApiKey
             headers["APIKEY"] = config.altinn.altinnApiKey
@@ -124,6 +124,9 @@ class AltinnrettigheterProxyKlient(
         const val ISSUER_SELVBETJENING = "selvbetjening"
         const val CORRELATION_ID_HEADER_NAME = "X-Correlation-ID"
         const val CONSUMER_ID_HEADER_NAME = "X-Consumer-ID"
+
+        fun getAltinnrettigheterProxyURL(basePath: String) = basePath.removeSuffix("/") + "/organisasjoner"
+        fun getAltinnURL(basePath: String) = basePath.removeSuffix("/") + "/ekstern/altinn/api/serviceowner/reportees"
     }
 }
 

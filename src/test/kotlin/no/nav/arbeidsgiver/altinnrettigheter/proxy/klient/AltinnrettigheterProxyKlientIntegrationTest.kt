@@ -18,7 +18,6 @@ import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.ServiceCode
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.ServiceEdition
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.Subject
 import no.nav.security.oidc.context.TokenContext
-import no.nav.security.oidc.test.support.JwtTokenGenerator
 import org.apache.http.HttpStatus
 import org.junit.AfterClass
 import org.junit.Before
@@ -194,7 +193,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
         const val SERVICE_EDITION = "1"
 
         private lateinit var wireMockServer: WireMockServer
-        val tokenContext = TokenContext(ISSUER_SELVBETJENING, JwtTokenGenerator.signedJWTAsString(FNR_INNLOGGET_BRUKER))
+        val tokenContext = TokenContext(ISSUER_SELVBETJENING, "dette_er_ikke_en_ekte_idToken")
 
         @BeforeClass
         @JvmStatic

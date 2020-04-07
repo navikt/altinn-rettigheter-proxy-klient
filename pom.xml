@@ -34,7 +34,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.11</maven.compiler.source>
         <maven.compiler.target>1.11</maven.compiler.target>
-        <spring-boot-starter.version>2.2.5.RELEASE</spring-boot-starter.version>
+        <fuel.version>2.2.1</fuel.version>
     </properties>
 
     <distributionManagement>
@@ -76,9 +76,9 @@
                     <args>
                         <arg>-Xjsr305=strict</arg>
                     </args>
-                    <compilerPlugins>
+                    <!--compilerPlugins>
                         <plugin>spring</plugin>
-                    </compilerPlugins>
+                    </compilerPlugins-->
                     <jvmTarget>1.8</jvmTarget>
                 </configuration>
                 <dependencies>
@@ -188,6 +188,13 @@
         <tag>HEAD</tag>
     </scm>
 
+    <repositories>
+        <repository>
+            <id>jcenter</id>
+            <url>https://jcenter.bintray.com/</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <!-- Kotlin dependencies -->
         <dependency>
@@ -213,17 +220,16 @@
             <version>2.9.8</version>
         </dependency>
 
-        <!-- Spring -->
+        <!-- Fuel Http Client -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-            <version>${spring-boot-starter.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-classic</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>com.github.kittinunf.fuel</groupId>
+            <artifactId>fuel</artifactId>
+            <version>2.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.kittinunf.fuel</groupId>
+            <artifactId>fuel-jackson</artifactId>
+            <version>2.2.1</version>
         </dependency>
 
         <!-- OIDC Support -->

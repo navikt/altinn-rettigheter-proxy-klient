@@ -2,10 +2,9 @@ package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import org.springframework.http.HttpStatus
 import java.io.InputStream
 
-class ProxyResponseIError(responseBody: ProxyResponseIErrorBody, val httpStatus: HttpStatus) {
+class ProxyResponseIError(responseBody: ProxyResponseIErrorBody, val httpStatus: Int) {
 
     val melding: String = responseBody.message
 
@@ -20,7 +19,7 @@ class ProxyResponseIError(responseBody: ProxyResponseIErrorBody, val httpStatus:
     }
 
     companion object {
-        fun parse(body: InputStream, httpStatus: HttpStatus): ProxyResponseIError {
+        fun parse(body: InputStream, httpStatus: Int): ProxyResponseIError {
             val inputAsString = body.bufferedReader().use { it.readText() }
             return ProxyResponseIError(parseBody(inputAsString), httpStatus)
         }

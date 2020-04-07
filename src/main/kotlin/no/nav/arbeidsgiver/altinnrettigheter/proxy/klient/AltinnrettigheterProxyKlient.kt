@@ -1,5 +1,10 @@
 package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient
 
+import com.github.kittinunf.fuel.core.Headers.Companion.ACCEPT
+import com.github.kittinunf.fuel.core.extensions.authentication
+import com.github.kittinunf.fuel.httpGet
+import com.github.kittinunf.fuel.jackson.responseObject
+import com.github.kittinunf.result.Result
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.*
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.AltinnReportee
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.ServiceCode
@@ -8,19 +13,10 @@ import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.Subject
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.utils.CorrelationIdUtils
 import no.nav.security.oidc.context.TokenContext
 import org.slf4j.LoggerFactory
-import org.springframework.boot.web.client.RestTemplateBuilder
-import org.springframework.core.ParameterizedTypeReference
-import org.springframework.http.*
-import org.springframework.web.client.RestTemplate
-import org.springframework.web.util.UriComponentsBuilder
-import java.net.URI
 
 class AltinnrettigheterProxyKlient(
-        private val config: AltinnrettigheterProxyKlientConfig,
-        restTemplateBuilder: RestTemplateBuilder
+        private val config: AltinnrettigheterProxyKlientConfig
 ) {
-
-    private val restTemplateBuilder = restTemplateBuilder
 
     fun hentOrganisasjoner(
             tokenContext: TokenContext,
@@ -34,11 +30,11 @@ class AltinnrettigheterProxyKlient(
         }
 
         return try {
-            hentOrganisasjonerViaAltinnrettigheterProxy(tokenContext, serviceCode, serviceEdition)
+            hentOrganisasjonerViaAltinnrettigheterProxyWithFuel(tokenContext, serviceCode, serviceEdition)
         } catch (proxyException: AltinnrettigheterProxyException) {
             logger.warn("Fikk en feil i altinn-rettigheter-proxy med melding '${proxyException.message}'. " +
                     "Gjør et nytt forsøk ved å kalle Altinn direkte.")
-            hentOrganisasjonerIAltinn(subject, serviceCode, serviceEdition)
+            hentOrganisasjonerIAltinnWithFuel(subject, serviceCode, serviceEdition)
         } catch (altinnException: AltinnException) {
             logger.warn("Fikk exception i Altinn med følgende melding '${altinnException.message}'. " +
                     "Exception fra Altinn håndteres av klient applikasjon")
@@ -51,109 +47,80 @@ class AltinnrettigheterProxyKlient(
     }
 
 
-    private fun hentOrganisasjonerViaAltinnrettigheterProxy(
+    private fun hentOrganisasjonerViaAltinnrettigheterProxyWithFuel(
             tokenContext: TokenContext,
             serviceCode: ServiceCode,
             serviceEdition: ServiceEdition
     ): List<AltinnReportee> {
-        val failsafeRestTemplate: RestTemplate =
-                restTemplateBuilder.errorHandler(
-                        RestTemplateProxyErrorHandler()
-                )
-                .build()
-
-        val respons = failsafeRestTemplate.exchange(
-                getAltinnRettigheterProxyURI(serviceCode, serviceEdition),
-                HttpMethod.GET,
-                getAuthHeadersForInnloggetBruker(tokenContext),
-                object : ParameterizedTypeReference<List<AltinnReportee>>() {}
+        val parameters = listOf(
+                "serviceCode" to serviceCode.value,
+                "serviceEdition" to serviceEdition.value
         )
 
-        if (respons.statusCode != HttpStatus.OK) {
-            val message = "Kall mot Altinn feiler med HTTP kode '${respons.statusCode}'"
-            throw RuntimeException(message)
-        }
+        var path = config.proxy.url + "/organisasjoner"
 
-        return respons.body!!
+        val (_, response, result) = with(path.httpGet(parameters)) {
+            authentication().bearer(tokenContext.idToken)
+            headers[CORRELATION_ID_HEADER_NAME] = CorrelationIdUtils.getCorrelationId()
+            headers[CONSUMER_ID_HEADER_NAME] = config.proxy.consumerId
+            headers[ACCEPT] = "application/json"
+
+            responseObject<List<AltinnReportee>>()
+        }
+        when (result) {
+            is Result.Failure -> {
+                val proxyResponseIError = ProxyResponseIError.parse(
+                        response.body().toStream(), response.statusCode)
+
+                logger.warn("Mottok en feil fra kilde '${proxyResponseIError.kilde}' " +
+                        "med status '${proxyResponseIError.httpStatus}' " +
+                        "og melding '${proxyResponseIError.melding}'")
+
+                if (proxyResponseIError.kilde == ProxyResponseIError.Kilde.ALTINN) {
+                    throw AltinnException(proxyResponseIError)
+                } else {
+                    throw AltinnrettigheterProxyException(proxyResponseIError)
+                }
+            }
+            is Result.Success -> return result.get()
+        }
     }
 
-    private fun hentOrganisasjonerIAltinn(
+    private fun hentOrganisasjonerIAltinnWithFuel(
             subject: Subject,
             serviceCode: ServiceCode,
             serviceEdition: ServiceEdition
     ): List<AltinnReportee> {
+        val parameters = listOf(
+                "ForceEIAuthentication" to "",
+                "subject" to subject.value,
+                "serviceCode" to serviceCode.value,
+                "serviceEdition" to serviceEdition.value
+        )
 
-        val restTemplate: RestTemplate = restTemplateBuilder.build()
+        var path = config.altinn.url + "/ekstern/altinn/api/serviceowner/reportees"
 
-        return try {
-            val respons = restTemplate.exchange(
-                    getAltinnURI(subject, serviceCode, serviceEdition),
-                    HttpMethod.GET,
-                    getHeaderEntityForAltinn(),
-                    object : ParameterizedTypeReference<List<AltinnReportee>>() {}
-            )
+        val (_, response, result) = with(path.httpGet(parameters)) {
+            headers[CORRELATION_ID_HEADER_NAME] = CorrelationIdUtils.getCorrelationId()
+            headers["X-NAV-APIKEY"] = config.altinn.altinnApiGwApiKey
+            headers["APIKEY"] = config.altinn.altinnApiKey
+            headers[ACCEPT] = "application/json"
 
-            if (respons.statusCode != HttpStatus.OK) {
-                val message = "Kall mot Altinn feiler med HTTP kode '${respons.statusCode}'"
-                throw RuntimeException(message)
-            }
-            respons.body!!
-        } catch (exception: Exception) {
-            throw AltinnrettigheterProxyKlientFallbackException(
-                    "Feil ved fallback kall til Altinn",
-                    exception
-            )
+            responseObject<List<AltinnReportee>>()
         }
-    }
-
-    private fun getAltinnRettigheterProxyURI(serviceCode: ServiceCode, serviceEdition: ServiceEdition): URI {
-        val uriBuilder = UriComponentsBuilder
-                .fromUriString(config.proxy.url)
-                .pathSegment("organisasjoner")
-                .queryParam("serviceCode", serviceCode.value)
-                .queryParam("serviceEdition", serviceEdition.value)
-
-        return uriBuilder.build().toUri()
-    }
-
-    private fun getAltinnURI(subject: Subject, serviceCode: ServiceCode, serviceEdition: ServiceEdition): URI {
-        val uriBuilder = UriComponentsBuilder
-                .fromUriString(config.altinn.url)
-                .pathSegment(
-                        "ekstern",
-                        "altinn",
-                        "api",
-                        "serviceowner",
-                        "reportees"
-                )
-                .queryParam("ForceEIAuthentication")
-                .queryParam("subject", subject.value)
-                .queryParam("serviceCode", serviceCode.value)
-                .queryParam("serviceEdition", serviceEdition.value)
-        return uriBuilder.build().toUri()
-    }
-
-    private fun getAuthHeadersForInnloggetBruker(tokenContext: TokenContext): HttpEntity<HttpHeaders> {
-        val headers = HttpHeaders()
-        headers.setBearerAuth(tokenContext.idToken)
-        headers[CORRELATION_ID_HEADER_NAME] = CorrelationIdUtils.getCorrelationId()
-        headers[CONSUMER_ID_HEADER_NAME] = config.proxy.consumerId
-        headers[HttpHeaders.ACCEPT] = MediaType.APPLICATION_JSON.toString()
-        return HttpEntity(headers)
-    }
-
-    private fun getHeaderEntityForAltinn(): HttpEntity<HttpHeaders> {
-        val headers = HttpHeaders()
-        headers[CORRELATION_ID_HEADER_NAME] = CorrelationIdUtils.getCorrelationId()
-        headers["X-NAV-APIKEY"] = config.altinn.altinnApiGwApiKey
-        headers["APIKEY"] = config.altinn.altinnApiKey
-        headers[HttpHeaders.ACCEPT] = "${MediaType.APPLICATION_JSON.type}/${MediaType.APPLICATION_JSON.subtype}"
-        return HttpEntity(headers)
+        when (result) {
+            is Result.Failure -> {
+                val melding = "Fallback kall mot Altinn feiler med HTTP kode '${response.statusCode}' " +
+                        "og melding '${response.responseMessage}'"
+                throw AltinnrettigheterProxyKlientFallbackException(melding, result.getException())
+            }
+            is Result.Success -> return result.get()
+        }
     }
 
 
     companion object {
-        private val logger = LoggerFactory.getLogger(RestTemplateProxyErrorHandler::class.java)
+        private val logger = LoggerFactory.getLogger(this::class.java)
         const val ISSUER_SELVBETJENING = "selvbetjening"
         const val CORRELATION_ID_HEADER_NAME = "X-Correlation-ID"
         const val CONSUMER_ID_HEADER_NAME = "X-Consumer-ID"

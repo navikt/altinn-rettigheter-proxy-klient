@@ -24,21 +24,12 @@ import org.junit.AfterClass
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
-import org.springframework.boot.web.client.RestTemplateBuilder
-import org.springframework.web.client.RestTemplate
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
 
 class AltinnrettigheterProxyKlientIntegrationTest {
-
-    val restTemplate: RestTemplate = RestTemplate()
-    private val restTemplateBuilder = object: RestTemplateBuilder() {
-        override fun build(): RestTemplate {
-            return restTemplate
-        }
-    }
 
     private val klient: AltinnrettigheterProxyKlient = AltinnrettigheterProxyKlient(
             AltinnrettigheterProxyKlientConfig(
@@ -50,8 +41,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
                     "test",
                     "test"
                     )
-            ),
-            restTemplateBuilder
+            )
     )
 
     @Before
@@ -185,13 +175,15 @@ class AltinnrettigheterProxyKlientIntegrationTest {
             )
             fail("Skulle har fått en exception")
         } catch (e: Exception) {
-            assertEquals("Feil ved fallback kall til Altinn", e.message)
+            assertEquals(
+                    "Fallback kall mot Altinn feiler med HTTP kode '400' og melding 'Bad Request'",
+                    e.message
+            )
         }
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(INVALID_SERVICE_CODE, SERVICE_EDITION))
         wireMockServer.verify(`altinn mottar riktig request`(INVALID_SERVICE_CODE, SERVICE_EDITION, FNR_INNLOGGET_BRUKER))
     }
-
 
 
     companion object {

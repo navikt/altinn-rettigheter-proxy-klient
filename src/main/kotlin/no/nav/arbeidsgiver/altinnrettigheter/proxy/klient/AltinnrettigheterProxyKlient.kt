@@ -2,10 +2,13 @@ package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient
 
 import com.github.kittinunf.fuel.core.Headers.Companion.ACCEPT
 import com.github.kittinunf.fuel.core.extensions.authentication
+import com.github.kittinunf.fuel.core.isClientError
+import com.github.kittinunf.fuel.core.isServerError
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.jackson.responseObject
 import com.github.kittinunf.result.Result
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.*
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.*
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.AltinnReportee
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.ServiceCode
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.ServiceEdition
@@ -69,17 +72,27 @@ class AltinnrettigheterProxyKlient(
         }
         when (result) {
             is Result.Failure -> {
-                val proxyResponseIError = ProxyResponseIError.parse(
-                        response.body().toStream(), response.statusCode)
+                if (!response.isClientError && !response.isServerError) {
+                    throw AltinnrettigheterProxyException(
+                            ProxyErrorUtenResponse(
+                                    "Feil ved bruk av Altinnrettigheter proxy pga " +
+                                            "'${result.getException().message}'",
+                                    ProxyError.Kilde.ALTINN_RETTIGHETER_PROXY)
+                    )
+                }
 
-                logger.warn("Mottok en feil fra kilde '${proxyResponseIError.kilde}' " +
-                        "med status '${proxyResponseIError.httpStatus}' " +
-                        "og melding '${proxyResponseIError.melding}'")
+                val proxyErrorMedResponseBody = ProxyErrorMedResponseBody.parse(
+                        response.body().toStream(),
+                        response.statusCode
+                )
+                logger.warn("Mottok en feil fra kilde '${proxyErrorMedResponseBody.kilde}' " +
+                        "med status '${proxyErrorMedResponseBody.httpStatus}' " +
+                        "og melding '${proxyErrorMedResponseBody.melding}'")
 
-                if (proxyResponseIError.kilde == ProxyResponseIError.Kilde.ALTINN) {
-                    throw AltinnException(proxyResponseIError)
+                if (proxyErrorMedResponseBody.kilde == ProxyError.Kilde.ALTINN) {
+                    throw AltinnException(proxyErrorMedResponseBody)
                 } else {
-                    throw AltinnrettigheterProxyException(proxyResponseIError)
+                    throw AltinnrettigheterProxyException(proxyErrorMedResponseBody)
                 }
             }
             is Result.Success -> return result.get()

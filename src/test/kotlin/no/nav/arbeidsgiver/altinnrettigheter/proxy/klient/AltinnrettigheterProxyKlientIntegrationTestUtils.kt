@@ -6,7 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.*
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.CONSUMER_ID_HEADER_NAME
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.CORRELATION_ID_HEADER_NAME
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyResponseIError
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyError
 import org.apache.http.HttpStatus
 
 class AltinnrettigheterProxyKlientIntegrationTestUtils {
@@ -36,7 +36,7 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                 serviceCode: String,
                 serviceEdition: String,
                 httpStatusKode: Int,
-                kilde: ProxyResponseIError.Kilde,
+                kilde: ProxyError.Kilde,
                 melding: String
         ): MappingBuilder {
             return get(urlPathEqualTo("/proxy/organisasjoner"))

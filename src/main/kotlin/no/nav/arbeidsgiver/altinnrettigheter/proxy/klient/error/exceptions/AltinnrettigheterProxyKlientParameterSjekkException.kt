@@ -1,4 +1,4 @@
-package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error
+package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions
 
 import java.lang.RuntimeException
 

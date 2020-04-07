@@ -4,11 +4,12 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.io.InputStream
 
-class ProxyResponseIError(responseBody: ProxyResponseIErrorBody, val httpStatus: Int) {
+class ProxyErrorMedResponseBody(private val responseBody: ProxyResponseIErrorBody, val httpStatus: Int): ProxyError()  {
 
-    val melding: String = responseBody.message
+    override val melding: String
+        get() = responseBody.message
 
-    val kilde: Kilde = try {
+    override val kilde: Kilde = try {
         Kilde.valueOf(responseBody.origin.toUpperCase())
     } catch (e: Exception) {
         Kilde.ALTINN_RETTIGHETER_PROXY_KLIENT
@@ -19,9 +20,9 @@ class ProxyResponseIError(responseBody: ProxyResponseIErrorBody, val httpStatus:
     }
 
     companion object {
-        fun parse(body: InputStream, httpStatus: Int): ProxyResponseIError {
+        fun parse(body: InputStream, httpStatus: Int): ProxyErrorMedResponseBody {
             val inputAsString = body.bufferedReader().use { it.readText() }
-            return ProxyResponseIError(parseBody(inputAsString), httpStatus)
+            return ProxyErrorMedResponseBody(parseBody(inputAsString), httpStatus)
         }
 
         private fun parseBody(inputAsString: String): ProxyResponseIErrorBody {
@@ -35,12 +36,6 @@ class ProxyResponseIError(responseBody: ProxyResponseIErrorBody, val httpStatus:
                         Kilde.ALTINN_RETTIGHETER_PROXY_KLIENT)
             }
         }
-    }
-
-    enum class Kilde(val verdi: String) {
-        ALTINN("ALTINN"),
-        ALTINN_RETTIGHETER_PROXY("ALTINN_RETTIGHETER_PROXY"),
-        ALTINN_RETTIGHETER_PROXY_KLIENT("ALTINN_RETTIGHETER_PROXY_KLIENT")
     }
 }
 

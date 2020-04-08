@@ -20,3 +20,7 @@ target/
 
 ### Apple ###
 .DS_Store
+
+### maven release temp files ###
+pom.xml.releaseBackup
+release.properties

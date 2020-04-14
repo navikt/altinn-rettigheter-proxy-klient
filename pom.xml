@@ -28,7 +28,7 @@
     </developers>
 
     <properties>
-        <java.version>11</java.version>
+        <java.version>8</java.version>
         <kotlin.version>1.3.61</kotlin.version>
         <fuel.version>2.2.1</fuel.version>
         <jackson-module-kotlin.version>2.9.9</jackson-module-kotlin.version>

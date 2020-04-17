@@ -65,6 +65,9 @@ Lag en ny release med `mvn release:prepare`
 
 Kommandoen skal pushe en ny tag på GitHub. Da kan `Build and publish` action starte og release artifactene til Maven central.
 
+## Publisere til Maven Central
+Credentials som skal til for å kunne publisere til Maven Central provisjoneres av [publish-maven-central](https://github.com/navikt/publish-maven-central)
+
 # Henvendelser
 
 Spørsmål knyttet til koden eller prosjektet kan rettes mot:

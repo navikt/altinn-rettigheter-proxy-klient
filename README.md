@@ -2,6 +2,7 @@ Altinnrettigheter-proxy-klient
 ==============================
 
 Bibliotek som tilbyr en Http klient til altinn-rettigheter-proxy.
+Klienten vil forsøke å kontakte Altinn via proxyen, som tilbyr cacing på tvers av ulike tjenester i Nav. Klienten har en innebygd feilhåndtering, slik at dersom kall mot proxyen feiler vil det gjøres et nytt kall direkte mot Altinn sitt API.
 
 # Komme i gang
 
@@ -11,7 +12,7 @@ Biblioteket er skrevet i Kotlin. Koden kompileres med maven og produserer en jar
 
 # Bruk av AltinnrettigheterProxyKlient 
 
-Biblioteket importeres i klient applikasjon som følgende (eksempel med maven)
+Biblioteket importeres i klientapplikasjon slik (eksempel med maven)
 ```xml
 <dependency>
   <groupId>no.nav.arbeidsgiver</groupId>
@@ -33,7 +34,7 @@ AltinnrettigheterProxyKlientConfig config =
 AltinnrettigheterProxyKlient klient = new AltinnrettigheterProxyKlient(config, restTemplateBuilder);
 ```
 
-Listen av organisasjoner `AltinnReportee` en bruker har enkel rettighet i kan hentes på denne måten:
+Listen av organisasjoner `AltinnReportee` der en bruker har spesifikk enkeltrettighet kan hentes på denne måten:
 ```java
 List<AltinnReportee> organisasjoner =  
     klient.hentOrganisasjoner(
@@ -44,7 +45,7 @@ List<AltinnReportee> organisasjoner =
     );
 ```
 
-`tokenContext` hentes fra selvbetjening token til innlogget bruker
+`tokenContext` hentes fra selvbetjeningstoken til innlogget bruker
 ```java
 TokenContext  tokenContext = 
     contextHolder.getOIDCValidationContext().getToken(ISSUER_SELVBETJENING);
@@ -53,7 +54,7 @@ TokenContext  tokenContext =
 ---
 # Lage og publisere en ny release
 ## Forutsetning
-Release tag skal være signert. Derfor signering av commits må være aktivert per default, med f.eks `git config commit.gpgsign true`
+Release tag skal være signert. Derfor må signering av commits være aktivert per default, med f.eks `git config commit.gpgsign true`
 
 ## Prosess
 Vi bruker `mvn-release-plugin` for å lage en ny release. I den prosessen skal en ny tag genereres.

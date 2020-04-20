@@ -135,7 +135,10 @@ class AltinnrettigheterProxyKlient(
                 logger.warn(melding)
                 throw AltinnrettigheterProxyKlientFallbackException(melding, result.getException())
             }
-            is Result.Success -> return result.get()
+            is Result.Success -> {
+                logger.info("Fallback kall til Altinn gjennomført")
+                return result.get()
+            }
         }
     }
 

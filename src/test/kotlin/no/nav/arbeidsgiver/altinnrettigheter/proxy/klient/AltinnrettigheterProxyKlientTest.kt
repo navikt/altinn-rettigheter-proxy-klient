@@ -1,5 +1,6 @@
 package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient
 
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.PROXY_ENDEPUNKT_API_ORGANISASJONER
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.getAltinnrettigheterProxyURL
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.getAltinnURL
 import org.junit.Assert.*
@@ -10,7 +11,7 @@ class AltinnrettigheterProxyKlientTest {
     @Test
     fun `getAltinnrettigheterProxyURL() fjerner trailing slash på base path`() {
         assertEquals("http://altinn.proxy/organisasjoner",
-                getAltinnrettigheterProxyURL("http://altinn.proxy/"))
+                getAltinnrettigheterProxyURL("http://altinn.proxy/", PROXY_ENDEPUNKT_API_ORGANISASJONER))
     }
 
     @Test

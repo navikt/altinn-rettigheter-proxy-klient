@@ -27,17 +27,47 @@ class AltinnrettigheterProxyKlient(
             serviceCode: ServiceCode,
             serviceEdition: ServiceEdition
     ): List<AltinnReportee> {
+        return hentOrganisasjonerViaProxy(
+                tokenContext,
+                subject,
+                mapOf(
+                "serviceCode" to serviceCode.value,
+                "serviceEdition" to serviceEdition.value
+                ),
+                PROXY_ENDEPUNKT_API_ORGANISASJONER
+        )
+    }
+
+    fun hentOrganisasjoner(
+            tokenContext: TokenContext,
+            subject: Subject,
+            queryParametre: Map<String, String>
+            ): List<AltinnReportee> {
+
+        return hentOrganisasjonerViaProxy(
+                tokenContext,
+                subject,
+                queryParametre,
+                PROXY_ENDEPUNKT_GENERISK)
+    }
+
+    private fun hentOrganisasjonerViaProxy(
+            tokenContext: TokenContext,
+            subject: Subject,
+            queryParametre: Map<String, String>,
+            endepunkt: String
+    ): List<AltinnReportee> {
 
         if (tokenContext.issuer != ISSUER_SELVBETJENING) {
             AltinnrettigheterProxyKlientParameterSjekkException("Feil med token")
         }
 
         return try {
-            hentOrganisasjonerViaAltinnrettigheterProxy(tokenContext, serviceCode, serviceEdition)
+            hentOrganisasjonerViaAltinnrettigheterProxy(tokenContext, queryParametre, endepunkt)
         } catch (proxyException: AltinnrettigheterProxyException) {
             logger.warn("Fikk en feil i altinn-rettigheter-proxy med melding '${proxyException.message}'. " +
                     "Gjør et nytt forsøk ved å kalle Altinn direkte.")
-            hentOrganisasjonerIAltinn(subject, serviceCode, serviceEdition)
+            hentOrganisasjonerIAltinn(subject, queryParametre)
         } catch (altinnException: AltinnException) {
             logger.warn("Fikk exception i Altinn med følgende melding '${altinnException.message}'. " +
                     "Exception fra Altinn håndteres av klient applikasjon")
@@ -52,16 +82,17 @@ class AltinnrettigheterProxyKlient(
 
     private fun hentOrganisasjonerViaAltinnrettigheterProxy(
             tokenContext: TokenContext,
-            serviceCode: ServiceCode,
-            serviceEdition: ServiceEdition
+            queryParametre: Map<String, String>,
+            endepunktProxy: String
     ): List<AltinnReportee> {
-        val parameters = listOf(
-                "serviceCode" to serviceCode.value,
-                "serviceEdition" to serviceEdition.value
-        )
+
+        val parametreTilProxy = queryParametre.toMutableMap()
+
+        if ((!queryParametre.containsKey("ForceEIAuthentication")) && PROXY_ENDEPUNKT_GENERISK == endepunktProxy)
+            parametreTilProxy["ForceEIAuthentication"] = ""
 
         val (_, response, result) = with(
-                getAltinnrettigheterProxyURL(config.proxy.url).httpGet(parameters)
+                getAltinnrettigheterProxyURL(config.proxy.url, endepunktProxy).httpGet(parametreTilProxy.toList())
         ) {
             authentication().bearer(tokenContext.idToken)
             headers[CORRELATION_ID_HEADER_NAME] = CorrelationIdUtils.getCorrelationId()
@@ -101,18 +132,17 @@ class AltinnrettigheterProxyKlient(
 
     private fun hentOrganisasjonerIAltinn(
             subject: Subject,
-            serviceCode: ServiceCode,
-            serviceEdition: ServiceEdition
+            queryParametre: Map<String, String>
     ): List<AltinnReportee> {
-        val parameters = listOf(
-                "ForceEIAuthentication" to "",
-                "subject" to subject.value,
-                "serviceCode" to serviceCode.value,
-                "serviceEdition" to serviceEdition.value
-        )
+        val parametreTilAltinn: MutableMap<String, String> = queryParametre.toMutableMap();
+
+        if (!queryParametre.containsKey("ForceEIAuthentication"))
+            parametreTilAltinn["ForceEIAuthentication"] = ""
+
+        parametreTilAltinn["subject"] = subject.value
 
         val (_, response, result) = with(
-                getAltinnURL(config.altinn.url).httpGet(parameters)
+                getAltinnURL(config.altinn.url).httpGet(parametreTilAltinn.toList())
         ) {
             headers[CORRELATION_ID_HEADER_NAME] = CorrelationIdUtils.getCorrelationId()
             headers["X-NAV-APIKEY"] = config.altinn.altinnApiGwApiKey
@@ -149,8 +179,14 @@ class AltinnrettigheterProxyKlient(
         const val CORRELATION_ID_HEADER_NAME = "X-Correlation-ID"
         const val CONSUMER_ID_HEADER_NAME = "X-Consumer-ID"
 
-        fun getAltinnrettigheterProxyURL(basePath: String) = basePath.removeSuffix("/") + "/organisasjoner"
-        fun getAltinnURL(basePath: String) = basePath.removeSuffix("/") + "/ekstern/altinn/api/serviceowner/reportees"
+        const val PROXY_ENDEPUNKT_API_ORGANISASJONER = "/organisasjoner"
+        const val PROXY_ENDEPUNKT_GENERISK = "/ekstern/altinn/api/serviceowner/reportees"
+
+        fun getAltinnrettigheterProxyURL(basePath: String, endepunkt: String) =
+                basePath.removeSuffix("/") + endepunkt
+
+        fun getAltinnURL(basePath: String) =
+                basePath.removeSuffix("/") + "/ekstern/altinn/api/serviceowner/reportees"
     }
 }
 

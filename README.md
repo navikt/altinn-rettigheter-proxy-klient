@@ -2,7 +2,7 @@ Altinnrettigheter-proxy-klient
 ==============================
 
 Bibliotek som tilbyr en Http klient til altinn-rettigheter-proxy.
-Klienten vil forsøke å kontakte Altinn via proxyen, som tilbyr cacing på tvers av ulike tjenester i Nav. Klienten har en innebygd feilhåndtering, slik at dersom kall mot proxyen feiler vil det gjøres et nytt kall direkte mot Altinn sitt API.
+Klienten vil forsøke å kontakte Altinn via proxyen, som tilbyr caching på tvers av ulike tjenester i Nav. Klienten har en innebygd feilhåndtering, slik at dersom kall mot proxyen feiler vil det gjøres et nytt kall direkte mot Altinn sitt API.
 
 # Komme i gang
 
@@ -69,6 +69,7 @@ Kommandoen skal pushe en ny tag på GitHub. Da kan `Build and publish` action st
 ## Publisere til Maven Central
 Credentials som skal til for å kunne publisere til Maven Central provisjoneres av [publish-maven-central](https://github.com/navikt/publish-maven-central)
 
+Tilgjengelige versjoner: https://repo1.maven.org/maven2/no/nav/arbeidsgiver/altinn-rettigheter-proxy-klient/
 # Henvendelser
 
 Spørsmål knyttet til koden eller prosjektet kan rettes mot:

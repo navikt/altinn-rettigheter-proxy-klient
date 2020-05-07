@@ -9,6 +9,8 @@ import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxy
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn mottar riktig request`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn returnerer 200 OK og en liste med to AltinnReportee`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn returnerer 400 Bad Request`
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy med pagination og filter parametre returnerer 200 OK og en liste med to AltinnReportee`
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy mottar riktig request med flere parametre`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy mottar riktig request`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy returnerer 200 OK og en liste med to AltinnReportee`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy returnerer 500 uhåndtert feil`
@@ -63,6 +65,39 @@ class AltinnrettigheterProxyKlientIntegrationTest {
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE,SERVICE_EDITION))
+        assertTrue { organisasjoner.size == 2 }
+    }
+
+    @Test
+    fun `hentOrganisasjoner() med andre parametre kaller AltinnrettigheterProxy med riktige parametre og returnerer en liste av Altinn reportees`() {
+        wireMockServer.stubFor(`altinn-rettigheter-proxy med pagination og filter parametre returnerer 200 OK og en liste med to AltinnReportee`(
+                SYKEFRAVÆR_SERVICE_CODE,
+                SERVICE_EDITION,
+                500,
+                0,
+                "Type+ne+'Person'+and+Status+eq+'Active'"
+                )
+        )
+
+        val organisasjoner = klient.hentOrganisasjoner(
+                tokenContext,
+                Subject(FNR_INNLOGGET_BRUKER),
+                mapOf(
+                        "serviceCode" to "3403",
+                        "serviceEdition" to "1",
+                        "\$filter" to "Type+ne+'Person'+and+Status+eq+'Active'",
+                        "\$top" to "500",
+                        "\$skip" to "0"
+                )
+        )
+
+        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request med flere parametre`(
+                SYKEFRAVÆR_SERVICE_CODE,
+                SERVICE_EDITION,
+                500,
+                0,
+                "Type+ne+'Person'+and+Status+eq+'Active'"
+        ))
         assertTrue { organisasjoner.size == 2 }
     }
 

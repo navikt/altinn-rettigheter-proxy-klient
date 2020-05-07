@@ -88,7 +88,7 @@ class AltinnrettigheterProxyKlient(
 
         val parametreTilProxy = queryParametre.toMutableMap()
 
-        if ((!queryParametre.containsKey("ForceEIAuthentication")) && PROXY_ENDEPUNKT_GENERISK == endepunktProxy)
+        if ((!parametreTilProxy.containsKey("ForceEIAuthentication")) && PROXY_ENDEPUNKT_GENERISK == endepunktProxy)
             parametreTilProxy["ForceEIAuthentication"] = ""
 
         val (_, response, result) = with(
@@ -136,7 +136,7 @@ class AltinnrettigheterProxyKlient(
     ): List<AltinnReportee> {
         val parametreTilAltinn: MutableMap<String, String> = queryParametre.toMutableMap();
 
-        if (!queryParametre.containsKey("ForceEIAuthentication"))
+        if (!parametreTilAltinn.containsKey("ForceEIAuthentication"))
             parametreTilAltinn["ForceEIAuthentication"] = ""
 
         parametreTilAltinn["subject"] = subject.value

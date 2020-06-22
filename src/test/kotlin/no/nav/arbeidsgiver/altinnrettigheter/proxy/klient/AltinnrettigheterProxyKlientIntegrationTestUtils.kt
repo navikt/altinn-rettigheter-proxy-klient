@@ -171,9 +171,9 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
         fun `altinn-rettigheter-proxy mottar riktig request med flere parametre`(
                 serviceCode: String,
                 serviceEdition: String,
+                filter: String,
                 top: Int,
-                skip: Int,
-                filter: String
+                skip: Int
         ): RequestPatternBuilder {
             return getRequestedFor(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_GENERISK"))
                     .withHeader("Accept", containing("application/json"))
@@ -203,5 +203,73 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                     .withQueryParam("serviceCode", equalTo(serviceCode))
                     .withQueryParam("serviceEdition", equalTo(serviceEdition))
         }
+
+        fun `altinn-rettigheter-proxy returnerer 502 Bad Gateway`(
+                serviceCode: String,
+                serviceEdition: String,
+                filterRegex: String,
+                top: Int,
+                skip: Int
+        ): MappingBuilder {
+            return get(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_GENERISK"))
+                    .withHeader("Accept", equalTo("application/json"))
+                    .withQueryParams(mapOf(
+                            "serviceCode" to equalTo(serviceCode),
+                            "serviceEdition" to equalTo(serviceEdition),
+                            "%24filter" to matching(filterRegex),
+                            "%24top" to equalTo(top.toString()),
+                            "%24skip" to equalTo(skip.toString())
+                    ))
+                    .willReturn(aResponse()
+                            .withStatus(HttpStatus.SC_BAD_GATEWAY)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("{" +
+                                    "\"status\": \"502\"," +
+                                    "\"message\": \"Bad Gateway\"}"
+                            )
+                    )
+        }
+
+
+        fun `altinn returnerer 200 OK og en liste med to AltinnReportee`(
+                serviceCode: String, serviceEdition: String,
+                filterRegex: String,
+                top: Int,
+                skip: Int
+        ): MappingBuilder {
+            return get(urlPathEqualTo("/altinn/ekstern/altinn/api/serviceowner/reportees"))
+                    .withHeader("Accept", equalTo("application/json"))
+                    .withQueryParams(mapOf(
+                            "serviceCode" to equalTo(serviceCode),
+                            "serviceEdition" to equalTo(serviceEdition),
+                            "%24filter" to matching(filterRegex),
+                            "%24top" to equalTo(top.toString()),
+                            "%24skip" to equalTo(skip.toString())
+                    ))
+                    .willReturn(`200 response med en liste av to reportees`())
+        }
+
+        fun `altinn mottar riktig request`(
+                serviceCode: String,
+                serviceEdition: String,
+                subject: String,
+                filter: String,
+                top: Int,
+                skip: Int
+        ): RequestPatternBuilder {
+            return getRequestedFor(urlPathEqualTo("/altinn/ekstern/altinn/api/serviceowner/reportees"))
+                    .withHeader("Accept", containing("application/json"))
+                    .withHeader(CORRELATION_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
+                    .withoutHeader("Authorization")
+                    .withQueryParam("ForceEIAuthentication", equalTo(""))
+                    .withQueryParam("subject", equalTo(subject))
+                    .withQueryParam("serviceCode", equalTo(serviceCode))
+                    .withQueryParam("serviceEdition", equalTo(serviceEdition))
+                    .withQueryParam("serviceEdition", equalTo(serviceEdition))
+                    .withQueryParam("%24filter", equalTo(filter))
+                    .withQueryParam("%24top", equalTo(top.toString()))
+                    .withQueryParam("%24skip", equalTo(skip.toString()))
+        }
+
     }
 }

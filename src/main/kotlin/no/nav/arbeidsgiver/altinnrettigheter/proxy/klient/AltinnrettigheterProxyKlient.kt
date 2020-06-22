@@ -139,6 +139,10 @@ class AltinnrettigheterProxyKlient(
         if (!parametreTilAltinn.containsKey("ForceEIAuthentication"))
             parametreTilAltinn["ForceEIAuthentication"] = ""
 
+        if (parametreTilAltinn.containsKey("\$filter")) {
+            parametreTilAltinn["\$filter"] = (parametreTilAltinn["\$filter"] ?: "").replace("+", " ")
+        }
+
         parametreTilAltinn["subject"] = subject.value
 
         val (_, response, result) = with(

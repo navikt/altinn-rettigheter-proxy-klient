@@ -31,7 +31,7 @@ AltinnrettigheterProxyKlientConfig config =
         new AltinnConfig(altinnUrl, altinnApikey, altinnAPIGWApikey)
     );
 
-AltinnrettigheterProxyKlient klient = new AltinnrettigheterProxyKlient(config, restTemplateBuilder);
+AltinnrettigheterProxyKlient klient = new AltinnrettigheterProxyKlient(config);
 ```
 
 Listen av organisasjoner `AltinnReportee` der en bruker har spesifikk enkeltrettighet kan hentes på denne måten:

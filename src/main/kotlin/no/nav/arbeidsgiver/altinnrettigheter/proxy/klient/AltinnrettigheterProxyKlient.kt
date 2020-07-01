@@ -9,12 +9,8 @@ import com.github.kittinunf.fuel.jackson.responseObject
 import com.github.kittinunf.result.Result
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.*
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.*
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.AltinnReportee
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.ServiceCode
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.ServiceEdition
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.Subject
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.*
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.utils.CorrelationIdUtils
-import no.nav.security.oidc.context.TokenContext
 import org.slf4j.LoggerFactory
 
 class AltinnrettigheterProxyKlient(
@@ -22,13 +18,13 @@ class AltinnrettigheterProxyKlient(
 ) {
 
     fun hentOrganisasjoner(
-            tokenContext: TokenContext,
+            selvbetjeningToken: SelvbetjeningToken,
             subject: Subject,
             serviceCode: ServiceCode,
             serviceEdition: ServiceEdition
     ): List<AltinnReportee> {
         return hentOrganisasjonerViaProxy(
-                tokenContext,
+                selvbetjeningToken,
                 subject,
                 mapOf(
                         "serviceCode" to serviceCode.value,
@@ -39,31 +35,27 @@ class AltinnrettigheterProxyKlient(
     }
 
     fun hentOrganisasjoner(
-            tokenContext: TokenContext,
+            selvbetjeningToken: SelvbetjeningToken,
             subject: Subject,
             queryParametre: Map<String, String>
     ): List<AltinnReportee> {
 
         return hentOrganisasjonerViaProxy(
-                tokenContext,
+                selvbetjeningToken,
                 subject,
                 queryParametre,
                 PROXY_ENDEPUNKT_GENERISK)
     }
 
     private fun hentOrganisasjonerViaProxy(
-            tokenContext: TokenContext,
+            selvbetjeningToken: SelvbetjeningToken,
             subject: Subject,
             queryParametre: Map<String, String>,
             endepunkt: String
     ): List<AltinnReportee> {
 
-        if (tokenContext.issuer != ISSUER_SELVBETJENING) {
-            AltinnrettigheterProxyKlientParameterSjekkException("Feil med token")
-        }
-
         return try {
-            hentOrganisasjonerViaAltinnrettigheterProxy(tokenContext, queryParametre, endepunkt)
+            hentOrganisasjonerViaAltinnrettigheterProxy(selvbetjeningToken, queryParametre, endepunkt)
         } catch (proxyException: AltinnrettigheterProxyException) {
             logger.warn("Fikk en feil i altinn-rettigheter-proxy med melding '${proxyException.message}'. " +
                     "Gjør et nytt forsøk ved å kalle Altinn direkte.")
@@ -81,7 +73,7 @@ class AltinnrettigheterProxyKlient(
 
 
     private fun hentOrganisasjonerViaAltinnrettigheterProxy(
-            tokenContext: TokenContext,
+            selvbetjeningToken: SelvbetjeningToken,
             queryParametre: Map<String, String>,
             endepunktProxy: String
     ): List<AltinnReportee> {
@@ -94,7 +86,7 @@ class AltinnrettigheterProxyKlient(
         val (_, response, result) = with(
                 getAltinnrettigheterProxyURL(config.proxy.url, endepunktProxy).httpGet(parametreTilProxy.toList())
         ) {
-            authentication().bearer(tokenContext.idToken)
+            authentication().bearer(selvbetjeningToken.value)
             headers[CORRELATION_ID_HEADER_NAME] = CorrelationIdUtils.getCorrelationId()
             headers[CONSUMER_ID_HEADER_NAME] = config.proxy.consumerId
             headers[ACCEPT] = "application/json"
@@ -182,7 +174,6 @@ class AltinnrettigheterProxyKlient(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java)
-        const val ISSUER_SELVBETJENING = "selvbetjening"
         const val CORRELATION_ID_HEADER_NAME = "X-Correlation-ID"
         const val CONSUMER_ID_HEADER_NAME = "X-Consumer-ID"
 

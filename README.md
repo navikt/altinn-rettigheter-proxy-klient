@@ -62,7 +62,10 @@ Vi bruker `mvn-release-plugin` for å lage en ny release. I den prosessen skal e
 
 Start med å rydde opp etter forrige release om det trenges ved å kjøre `mvn release:clean`
 
-Lag en ny release med `mvn release:prepare`
+Lag en ny release med `mvn release:prepare`:
+ * Skriv inn nytt release version (skal følge semantic versioning: https://semver.org/)
+ * SCM release tag er preutfylt (bare trykk enter)
+ * new development version er også preutfylt (trykk enter)
 
 Kommandoen skal pushe en ny tag på GitHub. Da kan `Build and publish` action starte og release artifactene til Maven central.
 

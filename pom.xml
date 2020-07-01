@@ -32,7 +32,6 @@
         <kotlin.version>1.3.61</kotlin.version>
         <fuel.version>2.2.1</fuel.version>
         <jackson-module-kotlin.version>2.9.9</jackson-module-kotlin.version>
-        <oidc-support.version>0.2.18</oidc-support.version>
         <slf4j.version>1.7.25</slf4j.version>
         <maven.compiler.source>1.11</maven.compiler.source>
         <maven.compiler.target>1.11</maven.compiler.target>
@@ -264,13 +263,6 @@
             <groupId>com.github.kittinunf.fuel</groupId>
             <artifactId>fuel-jackson</artifactId>
             <version>${fuel.version}</version>
-        </dependency>
-
-        <!-- OIDC Support -->
-        <dependency>
-            <groupId>no.nav.security</groupId>
-            <artifactId>oidc-support</artifactId>
-            <version>${oidc-support.version}</version>
         </dependency>
 
         <dependency>

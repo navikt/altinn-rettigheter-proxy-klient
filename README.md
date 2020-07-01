@@ -38,18 +38,14 @@ Listen av organisasjoner `AltinnReportee` der en bruker har spesifikk enkeltrett
 ```java
 List<AltinnReportee> organisasjoner =  
     klient.hentOrganisasjoner(
-        tokenContext,
+        new SelvbetjeningToken(selvbetjeningTokenAsString),
         new Subject(fnrInnloggetBruker),
         new ServiceCode(serviceCode),
         new ServiceEdition(serviceEdition)
     );
 ```
 
-`tokenContext` hentes fra selvbetjeningstoken til innlogget bruker
-```java
-TokenContext  tokenContext = 
-    contextHolder.getOIDCValidationContext().getToken(ISSUER_SELVBETJENING);
-``` 
+hvor `selvbetjeningTokenAsString` er String verdi av `selvbetjening-idtoken` cookie til innlogget bruker
 
 ---
 # Lage og publisere en ny release

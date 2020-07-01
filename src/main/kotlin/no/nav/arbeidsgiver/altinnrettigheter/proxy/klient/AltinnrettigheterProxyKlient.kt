@@ -31,8 +31,8 @@ class AltinnrettigheterProxyKlient(
                 tokenContext,
                 subject,
                 mapOf(
-                "serviceCode" to serviceCode.value,
-                "serviceEdition" to serviceEdition.value
+                        "serviceCode" to serviceCode.value,
+                        "serviceEdition" to serviceEdition.value
                 ),
                 PROXY_ENDEPUNKT_API_ORGANISASJONER
         )
@@ -42,7 +42,7 @@ class AltinnrettigheterProxyKlient(
             tokenContext: TokenContext,
             subject: Subject,
             queryParametre: Map<String, String>
-            ): List<AltinnReportee> {
+    ): List<AltinnReportee> {
 
         return hentOrganisasjonerViaProxy(
                 tokenContext,
@@ -103,13 +103,16 @@ class AltinnrettigheterProxyKlient(
         }
         when (result) {
             is Result.Failure -> {
-                if (!response.isClientError && !response.isServerError) {
+                if (response.statusCode==404 && !response.isServerError) {
                     throw AltinnrettigheterProxyException(
                             ProxyErrorUtenResponse(
                                     "Feil ved bruk av Altinnrettigheter proxy pga " +
                                             "'${result.getException().message}'",
                                     ProxyError.Kilde.ALTINN_RETTIGHETER_PROXY)
                     )
+                }
+                if(response.isClientError){
+                    return result.get();
                 }
 
                 val proxyErrorMedResponseBody = ProxyErrorMedResponseBody.parse(

@@ -5,7 +5,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.ISSUER_SELVBETJENING
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn mottar riktig request`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn returnerer 200 OK og en liste med to AltinnReportee`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn returnerer 400 Bad Request`
@@ -17,10 +16,10 @@ import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxy
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy returnerer 502 Bad Gateway`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'kilde' og 'melding' i response body`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyError
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.SelvbetjeningToken
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.ServiceCode
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.ServiceEdition
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.Subject
-import no.nav.security.oidc.context.TokenContext
 import org.apache.http.HttpStatus
 import org.junit.AfterClass
 import org.junit.Before
@@ -39,9 +38,9 @@ class AltinnrettigheterProxyKlientIntegrationTest {
                             "klient-applikasjon", "http://localhost:${PORT}/proxy"
                     ),
                     AltinnConfig(
-                    "http://localhost:${PORT}/altinn",
-                    "test",
-                    "test"
+                            "http://localhost:${PORT}/altinn",
+                            "test",
+                            "test"
                     )
             )
     )
@@ -59,13 +58,13 @@ class AltinnrettigheterProxyKlientIntegrationTest {
         )
 
         val organisasjoner = klient.hentOrganisasjoner(
-                tokenContext,
+                selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
                 ServiceEdition(SERVICE_EDITION)
         )
 
-        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE,SERVICE_EDITION))
+        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION))
         assertTrue { organisasjoner.size == 2 }
     }
 
@@ -77,11 +76,11 @@ class AltinnrettigheterProxyKlientIntegrationTest {
                 500,
                 0,
                 "Type+ne+'Person'+and+Status+eq+'Active'"
-                )
+        )
         )
 
         val organisasjoner = klient.hentOrganisasjoner(
-                tokenContext,
+                selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 mapOf(
                         "serviceCode" to "3403",
@@ -106,17 +105,17 @@ class AltinnrettigheterProxyKlientIntegrationTest {
     fun `hentOrganisasjoner() kaster en  AltinnException dersom Altinn svarer med feil til proxy`() {
         wireMockServer.stubFor(
                 `altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'kilde' og 'melding' i response body`(
-                INVALID_SERVICE_CODE,
-                SERVICE_EDITION,
-                HttpStatus.SC_BAD_GATEWAY,
-                ProxyError.Kilde.ALTINN,
-                "400: The ServiceCode=9999 and ServiceEditionCode=1 are either invalid or non-existing"
+                        INVALID_SERVICE_CODE,
+                        SERVICE_EDITION,
+                        HttpStatus.SC_BAD_GATEWAY,
+                        ProxyError.Kilde.ALTINN,
+                        "400: The ServiceCode=9999 and ServiceEditionCode=1 are either invalid or non-existing"
                 )
         )
 
         try {
             klient.hentOrganisasjoner(
-                    tokenContext,
+                    selvbetjeningToken,
                     Subject(FNR_INNLOGGET_BRUKER),
                     ServiceCode(INVALID_SERVICE_CODE),
                     ServiceEdition(SERVICE_EDITION)
@@ -127,7 +126,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
                     "are either invalid or non-existing", e.message)
         }
 
-        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(INVALID_SERVICE_CODE,SERVICE_EDITION))
+        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(INVALID_SERVICE_CODE, SERVICE_EDITION))
         val alleRequestTilAltinn = wireMockServer.findAll(getRequestedFor(urlMatching("/altinn/.*")))
         assertTrue(alleRequestTilAltinn.isEmpty())
     }
@@ -135,16 +134,16 @@ class AltinnrettigheterProxyKlientIntegrationTest {
     @Test
     fun `hentOrganisasjoner() fallback funksjon gjør et kall direkte til Altinn dersom proxy ikke svarer`() {
         var klientMedProxyUrlSomAldriSvarer: AltinnrettigheterProxyKlient = AltinnrettigheterProxyKlient(
-        AltinnrettigheterProxyKlientConfig(
-                ProxyConfig(
-                        "klient-applikasjon", "http://localhost:${PORT}/proxy-url-som-aldri-svarer"
-                ),
-                AltinnConfig(
-                        "http://localhost:${PORT}/altinn/",
-                        "test",
-                        "test"
+                AltinnrettigheterProxyKlientConfig(
+                        ProxyConfig(
+                                "klient-applikasjon", "http://localhost:${PORT}/proxy-url-som-aldri-svarer"
+                        ),
+                        AltinnConfig(
+                                "http://localhost:${PORT}/altinn/",
+                                "test",
+                                "test"
+                        )
                 )
-        )
         )
         wireMockServer.stubFor(`altinn returnerer 200 OK og en liste med to AltinnReportee`(
                 SYKEFRAVÆR_SERVICE_CODE,
@@ -152,7 +151,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
         )
 
         val organisasjoner = klientMedProxyUrlSomAldriSvarer.hentOrganisasjoner(
-                tokenContext,
+                selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
                 ServiceEdition(SERVICE_EDITION)
@@ -179,7 +178,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
         )
 
         val organisasjoner = klient.hentOrganisasjoner(
-                tokenContext,
+                selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
                 ServiceEdition(SERVICE_EDITION)
@@ -203,10 +202,10 @@ class AltinnrettigheterProxyKlientIntegrationTest {
         )
 
         val organisasjoner = klient.hentOrganisasjoner(
-                    tokenContext,
-                    Subject(FNR_INNLOGGET_BRUKER),
-                    ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                    ServiceEdition(SERVICE_EDITION)
+                selvbetjeningToken,
+                Subject(FNR_INNLOGGET_BRUKER),
+                ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
+                ServiceEdition(SERVICE_EDITION)
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION))
@@ -218,22 +217,22 @@ class AltinnrettigheterProxyKlientIntegrationTest {
     fun `hentOrganisasjoner() kaster en AltinnException dersom Altinn svarer med feil ved fallback kall`() {
         wireMockServer.stubFor(
                 `altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'kilde' og 'melding' i response body`(
-                INVALID_SERVICE_CODE,
-                SERVICE_EDITION,
-                HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                ProxyError.Kilde.ALTINN_RETTIGHETER_PROXY,
-                "Internal Server Error")
+                        INVALID_SERVICE_CODE,
+                        SERVICE_EDITION,
+                        HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                        ProxyError.Kilde.ALTINN_RETTIGHETER_PROXY,
+                        "Internal Server Error")
         )
         wireMockServer.stubFor(
                 `altinn returnerer 400 Bad Request`(
-                "400: The ServiceCode=9999 and ServiceEditionCode=1 are either invalid or non-existing",
-                INVALID_SERVICE_CODE,
-                SERVICE_EDITION)
+                        "400: The ServiceCode=9999 and ServiceEditionCode=1 are either invalid or non-existing",
+                        INVALID_SERVICE_CODE,
+                        SERVICE_EDITION)
         )
 
         try {
             klient.hentOrganisasjoner(
-                    tokenContext,
+                    selvbetjeningToken,
                     Subject(FNR_INNLOGGET_BRUKER),
                     ServiceCode(INVALID_SERVICE_CODE),
                     ServiceEdition(SERVICE_EDITION)
@@ -268,7 +267,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
 
         try {
             klientMedProxyOgAltinnSomAldriSvarer.hentOrganisasjoner(
-                    tokenContext,
+                    selvbetjeningToken,
                     Subject(FNR_INNLOGGET_BRUKER),
                     ServiceCode(INVALID_SERVICE_CODE),
                     ServiceEdition(SERVICE_EDITION)
@@ -276,7 +275,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
             fail("Skulle har fått en exception")
         } catch (e: Exception) {
             assertTrue(
-                    (e.message?: "Ingen melding").startsWith(
+                    (e.message ?: "Ingen melding").startsWith(
                             "Fallback kall mot Altinn feiler. Med melding 'Connection refused"
                     )
             )
@@ -302,7 +301,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
         )
 
         val organisasjoner = klient.hentOrganisasjoner(
-                tokenContext,
+                selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 mapOf(
                         "serviceCode" to SYKEFRAVÆR_SERVICE_CODE,
@@ -332,16 +331,15 @@ class AltinnrettigheterProxyKlientIntegrationTest {
     }
 
 
-
     companion object {
-        const val PORT:Int = 1331
+        const val PORT: Int = 1331
         const val FNR_INNLOGGET_BRUKER = "15008462396"
         const val SYKEFRAVÆR_SERVICE_CODE = "3403"
         const val INVALID_SERVICE_CODE = "9999"
         const val SERVICE_EDITION = "1"
 
         private lateinit var wireMockServer: WireMockServer
-        val tokenContext = TokenContext(ISSUER_SELVBETJENING, "dette_er_ikke_en_ekte_idToken")
+        val selvbetjeningToken = SelvbetjeningToken("dette_er_ikke_en_ekte_idToken")
 
         @BeforeClass
         @JvmStatic

@@ -132,7 +132,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
     }
 
     @Test
-    fun `hentOrganisasjoner() fallback funksjon gjør et kall direkte til Altinn dersom proxy ikke svarer`() {
+    fun `hentOrganisasjoner() fallback funksjon gjør et kall direkte til Altinn dersom proxy er nede`() {
         var klientMedProxyUrlSomAldriSvarer: AltinnrettigheterProxyKlient = AltinnrettigheterProxyKlient(
                 AltinnrettigheterProxyKlientConfig(
                         ProxyConfig(

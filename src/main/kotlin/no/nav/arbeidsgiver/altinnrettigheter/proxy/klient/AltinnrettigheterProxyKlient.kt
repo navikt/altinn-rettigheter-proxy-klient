@@ -110,14 +110,6 @@ class AltinnrettigheterProxyKlient(
                 } else {
                     throw AltinnrettigheterProxyException(proxyErrorMedResponseBody)
                 }
-                /*  if (!response.isClientError && !response.isServerError) {
-                      throw AltinnrettigheterProxyException(
-                              ProxyErrorUtenResponse(
-                                      "Feil ved bruk av Altinnrettigheter proxy pga " +
-                                              "'${result.getException().message}'",
-                                      ProxyError.Kilde.ALTINN_RETTIGHETER_PROXY)
-                      )
-                  }*/
 
 
             }

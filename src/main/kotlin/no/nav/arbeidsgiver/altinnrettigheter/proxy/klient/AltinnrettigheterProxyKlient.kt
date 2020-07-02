@@ -96,7 +96,7 @@ class AltinnrettigheterProxyKlient(
         when (result) {
             is Result.Failure -> {
                 val proxyErrorMedResponseBody = ProxyErrorMedResponseBody.parse(
-                        response.body().toStream(),
+                        response.body()?.toStream(),
                         response.statusCode
                 )
 

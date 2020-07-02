@@ -27,8 +27,8 @@ class AltinnrettigheterProxyKlient(
                 selvbetjeningToken,
                 subject,
                 mapOf(
-                "serviceCode" to serviceCode.value,
-                "serviceEdition" to serviceEdition.value
+                        "serviceCode" to serviceCode.value,
+                        "serviceEdition" to serviceEdition.value
                 ),
                 PROXY_ENDEPUNKT_API_ORGANISASJONER
         )
@@ -38,7 +38,7 @@ class AltinnrettigheterProxyKlient(
             selvbetjeningToken: SelvbetjeningToken,
             subject: Subject,
             queryParametre: Map<String, String>
-            ): List<AltinnReportee> {
+    ): List<AltinnReportee> {
 
         return hentOrganisasjonerViaProxy(
                 selvbetjeningToken,
@@ -95,28 +95,31 @@ class AltinnrettigheterProxyKlient(
         }
         when (result) {
             is Result.Failure -> {
-                if (!response.isClientError && !response.isServerError) {
-                    throw AltinnrettigheterProxyException(
-                            ProxyErrorUtenResponse(
-                                    "Feil ved bruk av Altinnrettigheter proxy pga " +
-                                            "'${result.getException().message}'",
-                                    ProxyError.Kilde.ALTINN_RETTIGHETER_PROXY)
-                    )
-                }
-
                 val proxyErrorMedResponseBody = ProxyErrorMedResponseBody.parse(
                         response.body().toStream(),
                         response.statusCode
                 )
+
+
                 logger.info("Mottok en feil fra kilde '${proxyErrorMedResponseBody.kilde}' " +
                         "med status '${proxyErrorMedResponseBody.httpStatus}' " +
                         "og melding '${proxyErrorMedResponseBody.melding}'")
 
-                if (proxyErrorMedResponseBody.kilde == ProxyError.Kilde.ALTINN) {
+                if ((response.isClientError && response.statusCode != 404) || proxyErrorMedResponseBody.kilde == ProxyError.Kilde.ALTINN) {
                     throw AltinnException(proxyErrorMedResponseBody)
                 } else {
                     throw AltinnrettigheterProxyException(proxyErrorMedResponseBody)
                 }
+                /*  if (!response.isClientError && !response.isServerError) {
+                      throw AltinnrettigheterProxyException(
+                              ProxyErrorUtenResponse(
+                                      "Feil ved bruk av Altinnrettigheter proxy pga " +
+                                              "'${result.getException().message}'",
+                                      ProxyError.Kilde.ALTINN_RETTIGHETER_PROXY)
+                      )
+                  }*/
+
+
             }
             is Result.Success -> return result.get()
         }

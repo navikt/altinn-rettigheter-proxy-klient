@@ -259,7 +259,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
                         ),
                         AltinnConfig(
                                 "http://localhost:13456/altinn-url-som-aldri-svarer",
-                                "test",
+                                "testApiKey",
                                 "test"
                         )
                 )

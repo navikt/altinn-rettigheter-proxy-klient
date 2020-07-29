@@ -6,7 +6,8 @@ import com.github.tomakehurst.wiremock.client.WireMock.*
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.CONSUMER_ID_HEADER_NAME
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.CORRELATION_ID_HEADER_NAME
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.PROXY_ENDEPUNKT_GENERISK
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.PROXY_ENDEPUNKT_API_ORGANISASJONER
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyError
 import org.apache.http.HttpStatus
 
@@ -15,37 +16,13 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
     companion object {
         const val NON_EMPTY_STRING_REGEX = "^(?!\\s*\$).+"
 
-        fun `altinn-rettigheter-proxy med pagination og filter parametre returnerer 200 OK og en liste med to AltinnReportee`(
-                serviceCode: String,
-                serviceEdition: String,
-                top: Int,
-                skip: Int,
-                filter: String
-        ): MappingBuilder {
-
-            return get(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_GENERISK"))
-                    .withHeader("Accept", equalTo("application/json"))
-                    .withHeader("Authorization", matching(NON_EMPTY_STRING_REGEX))
-                    .withHeader(CORRELATION_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
-                    .withHeader(CONSUMER_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
-
-                    .withQueryParams(mapOf(
-                            "ForceEIAuthentication" to equalTo(""),
-                            "%24top" to equalTo(top.toString()),
-                            "%24skip" to equalTo(skip.toString()),
-                            "%24filter" to equalTo(filter),
-                            "serviceCode" to equalTo(serviceCode),
-                            "serviceEdition" to equalTo(serviceEdition)
-                    ))
-                    .willReturn(`200 response med en liste av to reportees`())
-        }
 
         fun `altinn-rettigheter-proxy returnerer 200 OK og en liste med to AltinnReportee`(
                 serviceCode: String,
                 serviceEdition: String
         ): MappingBuilder {
 
-            return get(urlPathEqualTo("/proxy/organisasjoner"))
+            return get(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_API_ORGANISASJONER"))
                     .withHeader("Accept", equalTo("application/json"))
                     .withHeader("Authorization", matching(NON_EMPTY_STRING_REGEX))
                     .withHeader(CORRELATION_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
@@ -53,7 +30,10 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
 
                     .withQueryParams(mapOf(
                             "serviceCode" to equalTo(serviceCode),
-                            "serviceEdition" to equalTo(serviceEdition)
+                            "serviceEdition" to equalTo(serviceEdition),
+                            "top" to equalTo("500"),
+                            "skip" to equalTo("0"),
+                            "filter" to equalTo(QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER)
                     ))
                     .willReturn(`200 response med en liste av to reportees`())
         }
@@ -65,11 +45,14 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                 kilde: ProxyError.Kilde,
                 melding: String
         ): MappingBuilder {
-            return get(urlPathEqualTo("/proxy/organisasjoner"))
+            return get(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_API_ORGANISASJONER"))
                     .withHeader("Accept", equalTo("application/json"))
                     .withQueryParams(mapOf(
                             "serviceCode" to equalTo(serviceCode),
-                            "serviceEdition" to equalTo(serviceEdition)
+                            "serviceEdition" to equalTo(serviceEdition),
+                            "top" to equalTo("500"),
+                            "skip" to equalTo("0"),
+                            "filter" to equalTo(QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER)
                     ))
                     .willReturn(aResponse()
                             .withStatus(httpStatusKode)
@@ -85,11 +68,14 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                 serviceCode: String,
                 serviceEdition: String
         ): MappingBuilder {
-            return get(urlPathEqualTo("/proxy/organisasjoner"))
+            return get(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_API_ORGANISASJONER"))
                     .withHeader("Accept", equalTo("application/json"))
                     .withQueryParams(mapOf(
                             "serviceCode" to equalTo(serviceCode),
-                            "serviceEdition" to equalTo(serviceEdition)
+                            "serviceEdition" to equalTo(serviceEdition),
+                            "top" to equalTo("500"),
+                            "skip" to equalTo("0"),
+                            "filter" to equalTo(QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER)
                     ))
                     .willReturn(aResponse()
                             .withStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR)
@@ -158,7 +144,7 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                 serviceCode: String,
                 serviceEdition: String
         ): RequestPatternBuilder {
-            return getRequestedFor(urlPathEqualTo("/proxy/organisasjoner"))
+            return getRequestedFor(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_API_ORGANISASJONER"))
                     .withHeader("Accept", containing("application/json"))
                     .withHeader("Accept", equalTo("application/json"))
                     .withHeader("Authorization", matching(NON_EMPTY_STRING_REGEX))
@@ -166,6 +152,9 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                     .withHeader(CONSUMER_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
                     .withQueryParam("serviceCode", equalTo(serviceCode))
                     .withQueryParam("serviceEdition", equalTo(serviceEdition))
+                    .withQueryParam("top", equalTo("500"))
+                    .withQueryParam("skip", equalTo("0"))
+                    .withQueryParam("filter", equalTo(QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER))
         }
 
         fun `altinn-rettigheter-proxy mottar riktig request med flere parametre`(
@@ -175,18 +164,17 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                 top: Int,
                 skip: Int
         ): RequestPatternBuilder {
-            return getRequestedFor(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_GENERISK"))
+            return getRequestedFor(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_API_ORGANISASJONER"))
                     .withHeader("Accept", containing("application/json"))
                     .withHeader("Accept", equalTo("application/json"))
                     .withHeader("Authorization", matching(NON_EMPTY_STRING_REGEX))
                     .withHeader(CORRELATION_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
                     .withHeader(CONSUMER_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
-                    .withQueryParam("ForceEIAuthentication", equalTo(""))
                     .withQueryParam("serviceCode", equalTo(serviceCode))
                     .withQueryParam("serviceEdition", equalTo(serviceEdition))
-                    .withQueryParam("%24filter", equalTo(filter))
-                    .withQueryParam("%24top", equalTo(top.toString()))
-                    .withQueryParam("%24skip", equalTo(skip.toString()))
+                    .withQueryParam("filter", equalTo(filter))
+                    .withQueryParam("top", equalTo(top.toString()))
+                    .withQueryParam("skip", equalTo(skip.toString()))
         }
 
         fun `altinn mottar riktig request`(
@@ -206,19 +194,16 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
 
         fun `altinn-rettigheter-proxy returnerer 502 Bad Gateway`(
                 serviceCode: String,
-                serviceEdition: String,
-                filterRegex: String,
-                top: Int,
-                skip: Int
+                serviceEdition: String
         ): MappingBuilder {
-            return get(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_GENERISK"))
+            return get(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_API_ORGANISASJONER"))
                     .withHeader("Accept", equalTo("application/json"))
                     .withQueryParams(mapOf(
                             "serviceCode" to equalTo(serviceCode),
                             "serviceEdition" to equalTo(serviceEdition),
-                            "%24filter" to matching(filterRegex),
-                            "%24top" to equalTo(top.toString()),
-                            "%24skip" to equalTo(skip.toString())
+                            "top" to equalTo("500"),
+                            "skip" to equalTo("0"),
+                            "filter" to equalTo(QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER)
                     ))
                     .willReturn(aResponse()
                             .withStatus(HttpStatus.SC_BAD_GATEWAY)

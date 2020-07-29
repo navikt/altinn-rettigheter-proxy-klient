@@ -8,7 +8,6 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn mottar riktig request`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn returnerer 200 OK og en liste med to AltinnReportee`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn returnerer 400 Bad Request`
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy med pagination og filter parametre returnerer 200 OK og en liste med to AltinnReportee`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy mottar riktig request med flere parametre`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy mottar riktig request`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy returnerer 200 OK og en liste med to AltinnReportee`
@@ -69,39 +68,6 @@ class AltinnrettigheterProxyKlientIntegrationTest {
     }
 
     @Test
-    fun `hentOrganisasjoner() med andre parametre kaller AltinnrettigheterProxy med riktige parametre og returnerer en liste av Altinn reportees`() {
-        wireMockServer.stubFor(`altinn-rettigheter-proxy med pagination og filter parametre returnerer 200 OK og en liste med to AltinnReportee`(
-                SYKEFRAVÆR_SERVICE_CODE,
-                SERVICE_EDITION,
-                500,
-                0,
-                "Type+ne+'Person'+and+Status+eq+'Active'"
-        )
-        )
-
-        val organisasjoner = klient.hentOrganisasjoner(
-                selvbetjeningToken,
-                Subject(FNR_INNLOGGET_BRUKER),
-                mapOf(
-                        "serviceCode" to "3403",
-                        "serviceEdition" to "1",
-                        "\$filter" to "Type+ne+'Person'+and+Status+eq+'Active'",
-                        "\$top" to "500",
-                        "\$skip" to "0"
-                )
-        )
-
-        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request med flere parametre`(
-                SYKEFRAVÆR_SERVICE_CODE,
-                SERVICE_EDITION,
-                "Type+ne+'Person'+and+Status+eq+'Active'",
-                500,
-                0
-        ))
-        assertTrue { organisasjoner.size == 2 }
-    }
-
-    @Test
     fun `hentOrganisasjoner() kaster en  AltinnException dersom Altinn svarer med feil til proxy`() {
         wireMockServer.stubFor(
                 `altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'kilde' og 'melding' i response body`(
@@ -133,10 +99,11 @@ class AltinnrettigheterProxyKlientIntegrationTest {
 
     @Test
     fun `hentOrganisasjoner() fallback funksjon gjør et kall direkte til Altinn dersom proxy er nede`() {
-        var klientMedProxyUrlSomAldriSvarer: AltinnrettigheterProxyKlient = AltinnrettigheterProxyKlient(
+        // TODO: lag en bedre mock enn denne (svar et ordentlig 404, ikke WireMock sin default)
+        var klientMedProxyUrlSomAldriSvarer = AltinnrettigheterProxyKlient(
                 AltinnrettigheterProxyKlientConfig(
                         ProxyConfig(
-                                "klient-applikasjon", "http://localhost:${PORT}/proxy-url-som-aldri-svarer"
+                                "klient-applikasjon", "http://localhost:${PORT}/proxy-url-som-gir-404"
                         ),
                         AltinnConfig(
                                 "http://localhost:${PORT}/altinn/",
@@ -287,10 +254,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
 
         wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 502 Bad Gateway`(
                 SYKEFRAVÆR_SERVICE_CODE,
-                SERVICE_EDITION,
-                "^Type.ne.'Person'.and.Status.eq.'Active'\$",
-                500,
-                0)
+                SERVICE_EDITION)
         )
         wireMockServer.stubFor(`altinn returnerer 200 OK og en liste med to AltinnReportee`(
                 SYKEFRAVÆR_SERVICE_CODE,
@@ -303,19 +267,14 @@ class AltinnrettigheterProxyKlientIntegrationTest {
         val organisasjoner = klient.hentOrganisasjoner(
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
-                mapOf(
-                        "serviceCode" to SYKEFRAVÆR_SERVICE_CODE,
-                        "serviceEdition" to SERVICE_EDITION,
-                        "\$filter" to "Type+ne+'Person'+and+Status+eq+'Active'",
-                        "\$top" to "500",
-                        "\$skip" to "0"
-                )
+                ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
+                ServiceEdition(SERVICE_EDITION)
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request med flere parametre`(
                 SYKEFRAVÆR_SERVICE_CODE,
                 SERVICE_EDITION,
-                "Type+ne+'Person'+and+Status+eq+'Active'",
+                "Type ne 'Person' and Status eq 'Active'",
                 500,
                 0)
         )

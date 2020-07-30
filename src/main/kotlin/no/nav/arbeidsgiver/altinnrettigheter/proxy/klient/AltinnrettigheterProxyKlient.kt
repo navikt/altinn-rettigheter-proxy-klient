@@ -36,11 +36,11 @@ class AltinnrettigheterProxyKlient(
                     subject,
                     serviceCode,
                     serviceEdition,
-                    ALTINN_MAKS_PAGESIZE,
+                    config.pageSize,
                     organisasjoner.size,
                     QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER
             )
-            if (nyeOrganisasjoner.size < ALTINN_MAKS_PAGESIZE) {
+            if (nyeOrganisasjoner.size < config.pageSize) {
                 detFinnesFlereOrganisasjoner = false
             }
             organisasjoner.addAll(nyeOrganisasjoner)
@@ -188,8 +188,6 @@ class AltinnrettigheterProxyKlient(
         const val CONSUMER_ID_HEADER_NAME = "X-Consumer-ID"
 
         const val PROXY_ENDEPUNKT_API_ORGANISASJONER = "/v2/organisasjoner"
-
-        const val ALTINN_MAKS_PAGESIZE = 500
 
         fun getAltinnrettigheterProxyURL(basePath: String, endepunkt: String) =
                 basePath.removeSuffix("/") + endepunkt

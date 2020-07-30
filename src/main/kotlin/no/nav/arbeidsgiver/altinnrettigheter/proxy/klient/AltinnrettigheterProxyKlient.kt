@@ -40,9 +40,17 @@ class AltinnrettigheterProxyKlient(
                     organisasjoner.size,
                     QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER
             )
-            if (nyeOrganisasjoner.size < config.pageSize) {
+
+            if (nyeOrganisasjoner.size > config.pageSize) {
+                logger.error("Altinn returnerer flere organisasjoner (${nyeOrganisasjoner.size}) " +
+                        "enn det vi spurte om (${config.pageSize}). " +
+                        "Dette medfører at brukeren ikke får tilgang til alle bedriftene sine")
+            }
+
+            if (nyeOrganisasjoner.size != config.pageSize) {
                 detFinnesFlereOrganisasjoner = false
             }
+
             organisasjoner.addAll(nyeOrganisasjoner)
         }
 

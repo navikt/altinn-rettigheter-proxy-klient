@@ -7,8 +7,12 @@ import com.github.kittinunf.fuel.core.isServerError
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.jackson.responseObject
 import com.github.kittinunf.result.Result
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.*
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.*
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyError
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyErrorMedResponseBody
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.AltinnException
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.AltinnrettigheterProxyException
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.AltinnrettigheterProxyKlientException
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.AltinnrettigheterProxyKlientFallbackException
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.*
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.utils.CorrelationIdUtils
 import org.slf4j.LoggerFactory
@@ -17,17 +21,43 @@ class AltinnrettigheterProxyKlient(
         private val config: AltinnrettigheterProxyKlientConfig
 ) {
 
-    fun hentOrganisasjoner(
+    fun hentAlleOrganisasjonerMedFallbackFunksjonalitet(
             selvbetjeningToken: SelvbetjeningToken,
             subject: Subject,
             serviceCode: ServiceCode,
             serviceEdition: ServiceEdition
     ): List<AltinnReportee> {
+        val organisasjoner: ArrayList<AltinnReportee> = ArrayList()
+        var detFinnesFlereOrganisasjoner = true
 
-        val top = 500
-        val skip = 0
-        val filter = QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER
+        while (detFinnesFlereOrganisasjoner) {
+            val nyeOrganisasjoner = hentOrganisasjonerMedFallbackFunksjonalitet(
+                    selvbetjeningToken,
+                    subject,
+                    serviceCode,
+                    serviceEdition,
+                    ALTINN_MAKS_PAGESIZE,
+                    organisasjoner.size,
+                    QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER
+            )
+            if (nyeOrganisasjoner.size < ALTINN_MAKS_PAGESIZE) {
+                detFinnesFlereOrganisasjoner = false
+            }
+            organisasjoner.addAll(nyeOrganisasjoner)
+        }
 
+        return organisasjoner
+    }
+
+    fun hentOrganisasjonerMedFallbackFunksjonalitet(
+            selvbetjeningToken: SelvbetjeningToken,
+            subject: Subject,
+            serviceCode: ServiceCode,
+            serviceEdition: ServiceEdition,
+            top: Number,
+            skip: Number,
+            filter: String
+    ): List<AltinnReportee> {
         return try {
             hentOrganisasjonerViaAltinnrettigheterProxy(selvbetjeningToken, serviceCode, serviceEdition, top, skip, filter)
         } catch (proxyException: AltinnrettigheterProxyException) {
@@ -159,6 +189,8 @@ class AltinnrettigheterProxyKlient(
         const val CONSUMER_ID_HEADER_NAME = "X-Consumer-ID"
 
         const val PROXY_ENDEPUNKT_API_ORGANISASJONER = "/v2/organisasjoner"
+
+        const val ALTINN_MAKS_PAGESIZE = 500
 
         fun getAltinnrettigheterProxyURL(basePath: String, endepunkt: String) =
                 basePath.removeSuffix("/") + endepunkt

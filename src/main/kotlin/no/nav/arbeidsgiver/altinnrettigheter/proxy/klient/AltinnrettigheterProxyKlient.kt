@@ -36,18 +36,18 @@ class AltinnrettigheterProxyKlient(
                     subject,
                     serviceCode,
                     serviceEdition,
-                    config.pageSize,
+                    DEFAULT_PAGE_SIZE,
                     organisasjoner.size,
                     QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER
             )
 
-            if (nyeOrganisasjoner.size > config.pageSize) {
+            if (nyeOrganisasjoner.size > DEFAULT_PAGE_SIZE) {
                 logger.error("Altinn returnerer flere organisasjoner (${nyeOrganisasjoner.size}) " +
-                        "enn det vi spurte om (${config.pageSize}). " +
+                        "enn det vi spurte om (${DEFAULT_PAGE_SIZE}). " +
                         "Dette medfører at brukeren ikke får tilgang til alle bedriftene sine")
             }
 
-            if (nyeOrganisasjoner.size != config.pageSize) {
+            if (nyeOrganisasjoner.size != DEFAULT_PAGE_SIZE) {
                 detFinnesFlereOrganisasjoner = false
             }
 
@@ -188,6 +188,7 @@ class AltinnrettigheterProxyKlient(
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java)
 
+        const val DEFAULT_PAGE_SIZE = 500
         const val QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER = "Type ne 'Person' and Status eq 'Active'"
 
         const val PROXY_KLIENT_VERSJON_HEADER_NAME = "X-Proxyklient-Versjon"

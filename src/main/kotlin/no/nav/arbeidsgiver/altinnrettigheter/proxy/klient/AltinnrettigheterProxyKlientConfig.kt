@@ -2,8 +2,7 @@ package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient
 
 data class AltinnrettigheterProxyKlientConfig(
         val proxy: ProxyConfig,
-        val altinn: AltinnConfig,
-        val pageSize: Int = 500
+        val altinn: AltinnConfig
 )
 
 data class AltinnConfig(

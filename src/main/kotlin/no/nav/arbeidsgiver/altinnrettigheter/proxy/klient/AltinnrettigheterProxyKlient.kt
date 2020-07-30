@@ -21,7 +21,7 @@ class AltinnrettigheterProxyKlient(
         private val config: AltinnrettigheterProxyKlientConfig
 ) {
 
-    fun hentAlleOrganisasjonerMedFallbackFunksjonalitet(
+    fun hentOrganisasjoner(
             selvbetjeningToken: SelvbetjeningToken,
             subject: Subject,
             serviceCode: ServiceCode,
@@ -49,7 +49,7 @@ class AltinnrettigheterProxyKlient(
         return organisasjoner
     }
 
-    fun hentOrganisasjonerMedFallbackFunksjonalitet(
+    private fun hentOrganisasjonerMedFallbackFunksjonalitet(
             selvbetjeningToken: SelvbetjeningToken,
             subject: Subject,
             serviceCode: ServiceCode,
@@ -74,7 +74,6 @@ class AltinnrettigheterProxyKlient(
             throw AltinnrettigheterProxyKlientException("Exception ved kall til proxy", exception)
         }
     }
-
 
     private fun hentOrganisasjonerViaAltinnrettigheterProxy(
             selvbetjeningToken: SelvbetjeningToken,

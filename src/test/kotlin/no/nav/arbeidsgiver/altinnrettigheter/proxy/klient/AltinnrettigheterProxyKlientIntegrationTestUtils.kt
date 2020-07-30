@@ -1,5 +1,6 @@
 package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient
 
+import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock.*
@@ -10,13 +11,18 @@ import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxy
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyError
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.AltinnReportee
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.SelvbetjeningToken
 import org.apache.http.HttpStatus
 
 class AltinnrettigheterProxyKlientIntegrationTestUtils {
 
     companion object {
         const val NON_EMPTY_STRING_REGEX = "^(?!\\s*\$).+"
-
+        const val PORT: Int = 1331
+        const val FNR_INNLOGGET_BRUKER = "15008462396"
+        const val SYKEFRAVÆR_SERVICE_CODE = "3403"
+        const val INVALID_SERVICE_CODE = "9999"
+        const val SERVICE_EDITION = "1"
 
         fun `altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
                 serviceCode: String,

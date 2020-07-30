@@ -10,7 +10,7 @@ import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxy
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn returnerer 400 Bad Request`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy mottar riktig request med flere parametre`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy mottar riktig request`
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy returnerer 200 OK og en liste med to AltinnReportee`
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy returnerer 500 uhåndtert feil`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy returnerer 502 Bad Gateway`
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.`altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'kilde' og 'melding' i response body`
@@ -51,7 +51,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
 
     @Test
     fun `hentOrganisasjoner() kaller AltinnrettigheterProxy med riktige parametre og returnerer en liste av Altinn reportees`() {
-        wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med to AltinnReportee`(
+        wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
                 SYKEFRAVÆR_SERVICE_CODE,
                 SERVICE_EDITION)
         )
@@ -68,11 +68,107 @@ class AltinnrettigheterProxyKlientIntegrationTest {
     }
 
     @Test
+    fun `hentOrganisasjoner() kaller AltinnrettigheterProxy flere ganger hvis bruker har tilgang til flere enn 499 virksomheter`() {
+        wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
+                SYKEFRAVÆR_SERVICE_CODE,
+                SERVICE_EDITION,
+                500)
+        )
+        wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
+                SYKEFRAVÆR_SERVICE_CODE,
+                SERVICE_EDITION,
+                0,
+                "500")
+        )
+
+        val organisasjoner = klient.hentOrganisasjoner(
+                selvbetjeningToken,
+                Subject(FNR_INNLOGGET_BRUKER),
+                ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
+                ServiceEdition(SERVICE_EDITION)
+        )
+
+        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "0"))
+        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "500"))
+        assertTrue { organisasjoner.size == 500 }
+    }
+
+    @Test
+    fun `hentOrganisasjoner() skal hente alle virksomhetene hvis bruker har tilgang til flere enn 500 virksomheter`() {
+        wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
+                SYKEFRAVÆR_SERVICE_CODE,
+                SERVICE_EDITION,
+                500)
+        )
+        wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
+                SYKEFRAVÆR_SERVICE_CODE,
+                SERVICE_EDITION,
+                500,
+                "500")
+        )
+        wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
+                SYKEFRAVÆR_SERVICE_CODE,
+                SERVICE_EDITION,
+                321,
+                "1000")
+        )
+
+        val organisasjoner = klient.hentOrganisasjoner(
+                selvbetjeningToken,
+                Subject(FNR_INNLOGGET_BRUKER),
+                ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
+                ServiceEdition(SERVICE_EDITION)
+        )
+
+        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "0"))
+        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "500"))
+        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "1000"))
+        assertTrue { organisasjoner.size == 1321 }
+    }
+
+    @Test
+    fun `hentOrganisasjoner() skal gå over til fallback hvis kall nr 2 feiler`() {
+        wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
+                SYKEFRAVÆR_SERVICE_CODE,
+                SERVICE_EDITION,
+                500)
+        )
+        wireMockServer.stubFor(
+                `altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'kilde' og 'melding' i response body`(
+                        SYKEFRAVÆR_SERVICE_CODE,
+                        SERVICE_EDITION,
+                        "500",
+                        HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                        ProxyError.Kilde.ALTINN_RETTIGHETER_PROXY,
+                        "500: Internal server error"
+                )
+        )
+        wireMockServer.stubFor(`altinn returnerer 200 OK og en liste med to AltinnReportee`(
+                SYKEFRAVÆR_SERVICE_CODE,
+                SERVICE_EDITION)
+        )
+
+        val organisasjoner = klient.hentOrganisasjoner(
+                selvbetjeningToken,
+                Subject(FNR_INNLOGGET_BRUKER),
+                ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
+                ServiceEdition(SERVICE_EDITION)
+        )
+
+        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "0"))
+        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "500"))
+        wireMockServer.verify(`altinn mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, FNR_INNLOGGET_BRUKER))
+
+        assertTrue { organisasjoner.size == 502 }
+    }
+
+    @Test
     fun `hentOrganisasjoner() kaster en  AltinnException dersom Altinn svarer med feil til proxy`() {
         wireMockServer.stubFor(
                 `altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'kilde' og 'melding' i response body`(
                         INVALID_SERVICE_CODE,
                         SERVICE_EDITION,
+                        "0",
                         HttpStatus.SC_BAD_GATEWAY,
                         ProxyError.Kilde.ALTINN,
                         "400: The ServiceCode=9999 and ServiceEditionCode=1 are either invalid or non-existing"
@@ -134,6 +230,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
                 `altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'kilde' og 'melding' i response body`(
                         SYKEFRAVÆR_SERVICE_CODE,
                         SERVICE_EDITION,
+                        "0",
                         HttpStatus.SC_INTERNAL_SERVER_ERROR,
                         ProxyError.Kilde.ALTINN_RETTIGHETER_PROXY,
                         "500: Internal server error"
@@ -186,6 +283,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
                 `altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'kilde' og 'melding' i response body`(
                         INVALID_SERVICE_CODE,
                         SERVICE_EDITION,
+                        "0",
                         HttpStatus.SC_INTERNAL_SERVER_ERROR,
                         ProxyError.Kilde.ALTINN_RETTIGHETER_PROXY,
                         "Internal Server Error")

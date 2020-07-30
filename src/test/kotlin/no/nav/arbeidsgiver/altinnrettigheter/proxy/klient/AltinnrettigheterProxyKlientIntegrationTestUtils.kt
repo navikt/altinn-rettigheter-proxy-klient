@@ -9,6 +9,7 @@ import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxy
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.PROXY_ENDEPUNKT_API_ORGANISASJONER
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyError
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.AltinnReportee
 import org.apache.http.HttpStatus
 
 class AltinnrettigheterProxyKlientIntegrationTestUtils {
@@ -17,9 +18,11 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
         const val NON_EMPTY_STRING_REGEX = "^(?!\\s*\$).+"
 
 
-        fun `altinn-rettigheter-proxy returnerer 200 OK og en liste med to AltinnReportee`(
+        fun `altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
                 serviceCode: String,
-                serviceEdition: String
+                serviceEdition: String,
+                antallReportees: Int = 2,
+                skip: String = "0"
         ): MappingBuilder {
 
             return get(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_API_ORGANISASJONER"))
@@ -32,15 +35,16 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                             "serviceCode" to equalTo(serviceCode),
                             "serviceEdition" to equalTo(serviceEdition),
                             "top" to equalTo("500"),
-                            "skip" to equalTo("0"),
+                            "skip" to equalTo(skip),
                             "filter" to equalTo(QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER)
                     ))
-                    .willReturn(`200 response med en liste av to reportees`())
+                    .willReturn(`200 response med en liste av reportees`(antallReportees))
         }
 
         fun `altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'kilde' og 'melding' i response body`(
                 serviceCode: String,
                 serviceEdition: String,
+                skip: String = "0",
                 httpStatusKode: Int,
                 kilde: ProxyError.Kilde,
                 melding: String
@@ -51,7 +55,7 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                             "serviceCode" to equalTo(serviceCode),
                             "serviceEdition" to equalTo(serviceEdition),
                             "top" to equalTo("500"),
-                            "skip" to equalTo("0"),
+                            "skip" to equalTo(skip),
                             "filter" to equalTo(QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER)
                     ))
                     .willReturn(aResponse()
@@ -94,31 +98,61 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                             "serviceCode" to equalTo(serviceCode),
                             "serviceEdition" to equalTo(serviceEdition)
                     ))
-                    .willReturn(`200 response med en liste av to reportees`())
+                    .willReturn(`200 response med en liste av reportees`())
         }
 
-        fun `200 response med en liste av to reportees`(): ResponseDefinitionBuilder? {
+        fun `200 response med en liste av reportees`(antallReportees: Int = 2): ResponseDefinitionBuilder? {
+            var reportees = emptyList<String>()
+            if (antallReportees != 0) {
+                reportees = mutableListOf(
+                        "    {" +
+                                "        \"Name\": \"BALLSTAD OG HAMARØY\"," +
+                                "        \"Type\": \"Business\"," +
+                                "        \"ParentOrganizationNumber\": \"811076112\"," +
+                                "        \"OrganizationNumber\": \"811076732\"," +
+                                "        \"OrganizationForm\": \"BEDR\"," +
+                                "        \"Status\": \"Active\"" +
+                                "    }",
+                        "    {" +
+                                "        \"Name\": \"BALLSTAD OG HORTEN\"," +
+                                "        \"Type\": \"Enterprise\"," +
+                                "        \"ParentOrganizationNumber\": null," +
+                                "        \"OrganizationNumber\": \"811076112\"," +
+                                "        \"OrganizationForm\": \"AS\"," +
+                                "        \"Status\": \"Active\"" +
+                                "    }"
+                )
+                reportees.addAll(generateAltinnReporteeJson(antallReportees - 2))
+            }
+
             return aResponse()
                     .withStatus(200)
                     .withHeader("Content-Type", "application/json")
-                    .withBody("[" +
-                            "    {" +
-                            "        \"Name\": \"BALLSTAD OG HAMARØY\"," +
-                            "        \"Type\": \"Business\"," +
-                            "        \"ParentOrganizationNumber\": \"811076112\"," +
-                            "        \"OrganizationNumber\": \"811076732\"," +
-                            "        \"OrganizationForm\": \"BEDR\"," +
-                            "        \"Status\": \"Active\"" +
-                            "    }," +
-                            "    {" +
-                            "        \"Name\": \"BALLSTAD OG HORTEN\"," +
-                            "        \"Type\": \"Enterprise\"," +
-                            "        \"ParentOrganizationNumber\": null," +
-                            "        \"OrganizationNumber\": \"811076112\"," +
-                            "        \"OrganizationForm\": \"AS\"," +
-                            "        \"Status\": \"Active\"" +
-                            "    }" +
-                            "]")
+                    .withBody(reportees.joinToString(prefix = "[", postfix = "]", separator = ","))
+        }
+
+        private fun generateAltinnReporteeJson(antall: Int): List<String> {
+            return List(antall) { index ->
+                getAltinnReporteeJson(AltinnReportee(
+                        "name_$index",
+                        "Enterprise",
+                        "0",
+                        "$index",
+                        "AS",
+                        "Active"
+                ))
+            }
+        }
+
+        private fun getAltinnReporteeJson(reportee: AltinnReportee): String {
+            return "    {" +
+                    "        \"Name\": \"${reportee.name}\"," +
+                    "        \"Type\": \"${reportee.type}\"," +
+                    "        \"ParentOrganizationNumber\": \"${reportee.parentOrganizationNumber}\"," +
+                    "        \"OrganizationNumber\": \"${reportee.organizationNumber}\"," +
+                    "        \"OrganizationForm\": \"${reportee.organizationForm}\"," +
+                    "        \"Status\": \"${reportee.status}\"" +
+                    "    }"
         }
 
         fun `altinn returnerer 400 Bad Request`(
@@ -142,7 +176,8 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
 
         fun `altinn-rettigheter-proxy mottar riktig request`(
                 serviceCode: String,
-                serviceEdition: String
+                serviceEdition: String,
+                skip: String = "0"
         ): RequestPatternBuilder {
             return getRequestedFor(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_API_ORGANISASJONER"))
                     .withHeader("Accept", containing("application/json"))
@@ -153,7 +188,7 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                     .withQueryParam("serviceCode", equalTo(serviceCode))
                     .withQueryParam("serviceEdition", equalTo(serviceEdition))
                     .withQueryParam("top", equalTo("500"))
-                    .withQueryParam("skip", equalTo("0"))
+                    .withQueryParam("skip", equalTo(skip))
                     .withQueryParam("filter", equalTo(QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER))
         }
 
@@ -231,7 +266,7 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                             "%24top" to equalTo(top.toString()),
                             "%24skip" to equalTo(skip.toString())
                     ))
-                    .willReturn(`200 response med en liste av to reportees`())
+                    .willReturn(`200 response med en liste av reportees`())
         }
 
         fun `altinn mottar riktig request`(

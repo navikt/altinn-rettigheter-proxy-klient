@@ -10,7 +10,7 @@ class AltinnrettigheterProxyKlientTest {
 
     @Test
     fun `getAltinnrettigheterProxyURL() fjerner trailing slash på base path`() {
-        assertEquals("http://altinn.proxy/organisasjoner",
+        assertEquals("http://altinn.proxy$PROXY_ENDEPUNKT_API_ORGANISASJONER",
                 getAltinnrettigheterProxyURL("http://altinn.proxy/", PROXY_ENDEPUNKT_API_ORGANISASJONER))
     }
 

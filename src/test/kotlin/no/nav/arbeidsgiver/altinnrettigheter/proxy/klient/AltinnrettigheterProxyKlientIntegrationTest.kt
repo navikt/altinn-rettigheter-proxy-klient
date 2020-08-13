@@ -151,7 +151,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
         fun initClass() {
             wireMockServer = WireMockServer(WireMockConfiguration.wireMockConfig()
                     .port(PORT)
-                    .notifier(ConsoleNotifier(true)))
+                    .notifier(ConsoleNotifier(false)))
             wireMockServer.start()
         }
 

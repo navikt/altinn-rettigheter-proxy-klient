@@ -54,7 +54,7 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
     }
 
     @Test
-    fun `hentOrganisasjoner() skal gå over til fallback hvis kall nr 2 feiler`() {
+    fun `hentOrganisasjonerBasertPåRettigheter() skal gå over til fallback hvis kall nr 2 feiler`() {
         wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
                 SYKEFRAVÆR_SERVICE_CODE,
                 SERVICE_EDITION,
@@ -75,11 +75,12 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
                 SERVICE_EDITION)
         )
 
-        val organisasjoner = klient.hentOrganisasjoner(
+        val organisasjoner = klient.hentOrganisasjonerBasertPåRettigheter(
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "0"))
@@ -90,7 +91,7 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
     }
 
     @Test
-    fun `hentOrganisasjoner() kaster en AltinnException dersom Altinn svarer med feil til proxy, og bruker ikke fallback`() {
+    fun `hentOrganisasjonerBasertPåRettigheter() kaster en AltinnException dersom Altinn svarer med feil til proxy, og bruker ikke fallback`() {
         wireMockServer.stubFor(
                 `altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'kilde' og 'melding' i response body`(
                         INVALID_SERVICE_CODE,
@@ -103,11 +104,12 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
         )
 
         try {
-            klient.hentOrganisasjoner(
+            klient.hentOrganisasjonerBasertPåRettigheter(
                     selvbetjeningToken,
                     Subject(FNR_INNLOGGET_BRUKER),
                     ServiceCode(INVALID_SERVICE_CODE),
-                    ServiceEdition(SERVICE_EDITION)
+                    ServiceEdition(SERVICE_EDITION),
+                    true
             )
             fail("Skulle har fått en exception")
         } catch (e: Exception) {
@@ -121,7 +123,7 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
     }
 
     @Test
-    fun `hentOrganisasjoner() fallback funksjon gjør et kall direkte til Altinn dersom proxy er nede`() {
+    fun `hentOrganisasjonerBasertPåRettigheter() fallback funksjon gjør et kall direkte til Altinn dersom proxy er nede`() {
         // TODO: lag en bedre mock enn denne (svar et ordentlig 404, ikke WireMock sin default)
         var klientMedProxyUrlSomAldriSvarer = AltinnrettigheterProxyKlient(
                 AltinnrettigheterProxyKlientConfig(
@@ -140,11 +142,12 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
                 SERVICE_EDITION)
         )
 
-        val organisasjoner = klientMedProxyUrlSomAldriSvarer.hentOrganisasjoner(
+        val organisasjoner = klientMedProxyUrlSomAldriSvarer.hentOrganisasjonerBasertPåRettigheter(
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, FNR_INNLOGGET_BRUKER))
@@ -152,7 +155,7 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
     }
 
     @Test
-    fun `hentOrganisasjoner() fallback funksjon gjør et kall direkte til Altinn etter proxy svarer med intern feil`() {
+    fun `hentOrganisasjonerBasertPåRettigheter() fallback funksjon gjør et kall direkte til Altinn etter proxy svarer med intern feil`() {
         wireMockServer.stubFor(
                 `altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'kilde' og 'melding' i response body`(
                         SYKEFRAVÆR_SERVICE_CODE,
@@ -168,11 +171,12 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
                 SERVICE_EDITION)
         )
 
-        val organisasjoner = klient.hentOrganisasjoner(
+        val organisasjoner = klient.hentOrganisasjonerBasertPåRettigheter(
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION))
@@ -181,7 +185,7 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
     }
 
     @Test
-    fun `hentOrganisasjoner() fallback funksjon gjør et kall direkte til Altinn etter proxy svarer med uhåndtert feil`() {
+    fun `hentOrganisasjonerBasertPåRettigheter() fallback funksjon gjør et kall direkte til Altinn etter proxy svarer med uhåndtert feil`() {
 
         wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 500 uhåndtert feil`(
                 SYKEFRAVÆR_SERVICE_CODE,
@@ -192,11 +196,12 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
                 SERVICE_EDITION)
         )
 
-        val organisasjoner = klient.hentOrganisasjoner(
+        val organisasjoner = klient.hentOrganisasjonerBasertPåRettigheter(
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION))
@@ -205,7 +210,7 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
     }
 
     @Test
-    fun `hentOrganisasjoner() kaster en AltinnException dersom Altinn svarer med feil ved fallback kall`() {
+    fun `hentOrganisasjonerBasertPåRettigheter() kaster en AltinnException dersom Altinn svarer med feil ved fallback kall`() {
         wireMockServer.stubFor(
                 `altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'kilde' og 'melding' i response body`(
                         INVALID_SERVICE_CODE,
@@ -223,11 +228,12 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
         )
 
         try {
-            klient.hentOrganisasjoner(
+            klient.hentOrganisasjonerBasertPåRettigheter(
                     selvbetjeningToken,
                     Subject(FNR_INNLOGGET_BRUKER),
                     ServiceCode(INVALID_SERVICE_CODE),
-                    ServiceEdition(SERVICE_EDITION)
+                    ServiceEdition(SERVICE_EDITION),
+                    true
             )
             fail("Skulle har fått en exception")
         } catch (e: Exception) {
@@ -242,7 +248,7 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
     }
 
     @Test
-    fun `hentOrganisasjoner() kaster exception når ingen tjeneste svarer`() {
+    fun `hentOrganisasjonerBasertPåRettigheter() kaster exception når ingen tjeneste svarer`() {
         var klientMedProxyOgAltinnSomAldriSvarer = AltinnrettigheterProxyKlient(
                 AltinnrettigheterProxyKlientConfig(
                         ProxyConfig(
@@ -258,11 +264,12 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
         )
 
         try {
-            klientMedProxyOgAltinnSomAldriSvarer.hentOrganisasjoner(
+            klientMedProxyOgAltinnSomAldriSvarer.hentOrganisasjonerBasertPåRettigheter(
                     selvbetjeningToken,
                     Subject(FNR_INNLOGGET_BRUKER),
                     ServiceCode(INVALID_SERVICE_CODE),
-                    ServiceEdition(SERVICE_EDITION)
+                    ServiceEdition(SERVICE_EDITION),
+                    true
             )
             fail("Skulle har fått en exception")
         } catch (e: Exception) {
@@ -275,7 +282,7 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
     }
 
     @Test
-    fun `hentOrganisasjoner() fallback funksjon skal ikke enkode pluss tegn i filter parameter ved direkte kall til Altinn`() {
+    fun `hentOrganisasjonerBasertPåRettigheter() fallback funksjon skal ikke enkode pluss tegn i filter parameter ved direkte kall til Altinn`() {
 
         wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 502 Bad Gateway`(
                 SYKEFRAVÆR_SERVICE_CODE,
@@ -289,11 +296,12 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
                 0)
         )
 
-        val organisasjoner = klient.hentOrganisasjoner(
+        val organisasjoner = klient.hentOrganisasjonerBasertPåRettigheter(
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request med flere parametre`(

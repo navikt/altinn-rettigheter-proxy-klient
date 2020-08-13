@@ -39,26 +39,49 @@ class AltinnrettigheterProxyKlientIntegrationTest {
         wireMockServer.resetAll()
     }
 
+    // API signature tester
+
     @Test
     fun `hentOrganisasjoner() kaller AltinnrettigheterProxy med riktige parametre og returnerer en liste av Altinn reportees`() {
+        wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
+                2,
+                false
+        ))
+
+        val organisasjoner = klient.hentOrganisasjoner(
+                selvbetjeningToken,
+                Subject(FNR_INNLOGGET_BRUKER),
+                false
+        )
+
+        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(false))
+        assertTrue { organisasjoner.size == 2 }
+    }
+
+    @Test
+    fun `hentOrganisasjonerBasertPåRettigheter() kaller AltinnrettigheterProxy med riktige parametre og returnerer en liste av Altinn reportees`() {
         wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
                 SYKEFRAVÆR_SERVICE_CODE,
                 SERVICE_EDITION)
         )
 
-        val organisasjoner = klient.hentOrganisasjoner(
+        val organisasjoner = klient.hentOrganisasjonerBasertPåRettigheter(
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION))
         assertTrue { organisasjoner.size == 2 }
     }
 
+
+    // Tester som beviser at klient kan gjøre flere kall for å hente alle organisasjoner
+
     @Test
-    fun `hentOrganisasjoner() kaller AltinnrettigheterProxy flere ganger hvis bruker har tilgang til flere enn 499 virksomheter`() {
+    fun `hentOrganisasjonerBasertPåRettigheter() kaller AltinnrettigheterProxy flere ganger hvis bruker har tilgang til flere enn 499 virksomheter`() {
         wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
                 SYKEFRAVÆR_SERVICE_CODE,
                 SERVICE_EDITION,
@@ -71,11 +94,12 @@ class AltinnrettigheterProxyKlientIntegrationTest {
                 "500")
         )
 
-        val organisasjoner = klient.hentOrganisasjoner(
+        val organisasjoner = klient.hentOrganisasjonerBasertPåRettigheter(
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "0"))
@@ -84,7 +108,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
     }
 
     @Test
-    fun `hentOrganisasjoner() skal hente alle virksomhetene hvis bruker har tilgang til flere enn 500 virksomheter`() {
+    fun `hentOrganisasjonerBasertPåRettigheter() skal hente alle virksomhetene hvis bruker har tilgang til flere enn 500 virksomheter`() {
         wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
                 SYKEFRAVÆR_SERVICE_CODE,
                 SERVICE_EDITION,
@@ -103,11 +127,12 @@ class AltinnrettigheterProxyKlientIntegrationTest {
                 "1000")
         )
 
-        val organisasjoner = klient.hentOrganisasjoner(
+        val organisasjoner = klient.hentOrganisasjonerBasertPåRettigheter(
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "0"))

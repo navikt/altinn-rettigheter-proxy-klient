@@ -21,14 +21,70 @@ class AltinnrettigheterProxyKlient(
         private val config: AltinnrettigheterProxyKlientConfig
 ) {
 
+    /**
+     * Hent alle organisasjoner i Altinn en bruker har rettigheter i.
+     *  @param selvbetjeningToken - Selvbetjening token til innlogget bruker
+     *  @param subject - Fødselsnummer til innlogget bruker (fallback funksjon)
+     *  @param filterPaaAktiveOrganisasjoner - Aktiver filtering på både Status og Type
+     *
+     *  @return en liste av alle organisasjoner
+     *   - med Status: 'Active' og Type: 'Enterprise' | 'Business', når filterPaaAktiveOrganisasjoner er 'true'
+     *   - med Status: 'Active' | 'Inactive' og Type: 'Enterprise' | 'Business' | 'Person', når filterPaaAktiveOrganisasjoner er 'false'
+     */
     fun hentOrganisasjoner(
             selvbetjeningToken: SelvbetjeningToken,
             subject: Subject,
+            filterPaaAktiveOrganisasjoner: Boolean
+    ): List<AltinnReportee> {
+        return hentOrganisasjonerMedEllerUtenRettigheter(
+                selvbetjeningToken,
+                subject,
+                null,
+                null,
+                filterPaaAktiveOrganisasjoner
+        )
+    }
+
+    /**
+     * Hent alle organisasjoner i Altinn en bruker har enkel rettighet i
+     *  @param selvbetjeningToken - Selvbetjening token til innlogget bruker
+     *  @param subject - Fødselsnummer til innlogget bruker (fallback funksjon)
+     *  @param serviceCode - Kode for rettigheter brukeren har for en organisasjon (henger sammen med ServiceEdition)
+     *  @param serviceEdition
+     *  @param filterPaaAktiveOrganisasjoner - Aktiver filtering på både Status og Type
+     *
+     *  @return en liste av alle organisasjoner
+     *   - med Status: 'Active' og Type: 'Enterprise' | 'Business', når filterPaaAktiveOrganisasjoner er 'true'
+     *   - med Status: 'Active' | 'Inactive' og Type: 'Enterprise' | 'Business' | 'Person', når filterPaaAktiveOrganisasjoner er 'false'
+     */
+    fun hentOrganisasjonerBasertPåRettigheter(
+            selvbetjeningToken: SelvbetjeningToken,
+            subject: Subject,
             serviceCode: ServiceCode,
-            serviceEdition: ServiceEdition
+            serviceEdition: ServiceEdition,
+            filterPaaAktiveOrganisasjoner: Boolean
+    ): List<AltinnReportee> {
+        return hentOrganisasjonerMedEllerUtenRettigheter(
+                selvbetjeningToken,
+                subject,
+                serviceCode,
+                serviceEdition,
+                filterPaaAktiveOrganisasjoner
+        )
+    }
+
+
+    private fun hentOrganisasjonerMedEllerUtenRettigheter(
+            selvbetjeningToken: SelvbetjeningToken,
+            subject: Subject,
+            serviceCode: ServiceCode?,
+            serviceEdition: ServiceEdition?,
+            filterPaaAktiveOrganisasjoner: Boolean
     ): List<AltinnReportee> {
         val organisasjoner: ArrayList<AltinnReportee> = ArrayList()
         var detFinnesFlereOrganisasjoner = true
+
+        val filterValue = if (filterPaaAktiveOrganisasjoner) QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER else null
 
         while (detFinnesFlereOrganisasjoner) {
             val nyeOrganisasjoner = hentOrganisasjonerMedFallbackFunksjonalitet(
@@ -38,7 +94,7 @@ class AltinnrettigheterProxyKlient(
                     serviceEdition,
                     DEFAULT_PAGE_SIZE,
                     organisasjoner.size,
-                    QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER
+                    filterValue
             )
 
             if (nyeOrganisasjoner.size > DEFAULT_PAGE_SIZE) {
@@ -60,11 +116,11 @@ class AltinnrettigheterProxyKlient(
     private fun hentOrganisasjonerMedFallbackFunksjonalitet(
             selvbetjeningToken: SelvbetjeningToken,
             subject: Subject,
-            serviceCode: ServiceCode,
-            serviceEdition: ServiceEdition,
+            serviceCode: ServiceCode?,
+            serviceEdition: ServiceEdition?,
             top: Number,
             skip: Number,
-            filter: String
+            filter: String?
     ): List<AltinnReportee> {
         return try {
             hentOrganisasjonerViaAltinnrettigheterProxy(selvbetjeningToken, serviceCode, serviceEdition, top, skip, filter)
@@ -85,19 +141,21 @@ class AltinnrettigheterProxyKlient(
 
     private fun hentOrganisasjonerViaAltinnrettigheterProxy(
             selvbetjeningToken: SelvbetjeningToken,
-            serviceCode: ServiceCode,
-            serviceEdition: ServiceEdition,
+            serviceCode: ServiceCode?,
+            serviceEdition: ServiceEdition?,
             top: Number,
             skip: Number,
-            filter: String
+            filter: String?
     ): List<AltinnReportee> {
 
         val parametreTilProxy = mutableMapOf<String, String>()
-        parametreTilProxy["serviceCode"] = serviceCode.value
-        parametreTilProxy["serviceEdition"] = serviceEdition.value
+
+        if (serviceCode != null) parametreTilProxy["serviceCode"] = serviceCode.value
+        if (serviceEdition != null) parametreTilProxy["serviceEdition"] = serviceEdition.value
+        if (filter != null) parametreTilProxy["filter"] = filter
+
         parametreTilProxy["top"] = top.toString()
         parametreTilProxy["skip"] = skip.toString()
-        parametreTilProxy["filter"] = filter
 
         val (_, response, result) = with(
                 getAltinnrettigheterProxyURL(config.proxy.url, PROXY_ENDEPUNKT_API_ORGANISASJONER)
@@ -137,20 +195,22 @@ class AltinnrettigheterProxyKlient(
 
     private fun hentOrganisasjonerIAltinn(
             subject: Subject,
-            serviceCode: ServiceCode,
-            serviceEdition: ServiceEdition,
+            serviceCode: ServiceCode?,
+            serviceEdition: ServiceEdition?,
             top: Number,
             skip: Number,
-            filter: String
+            filter: String?
     ): List<AltinnReportee> {
         val parametreTilAltinn = mutableMapOf<String, String>()
+
         parametreTilAltinn["ForceEIAuthentication"] = ""
-        parametreTilAltinn["serviceCode"] = serviceCode.value
-        parametreTilAltinn["serviceEdition"] = serviceEdition.value
+
+        if (serviceCode != null) parametreTilAltinn["serviceCode"] = serviceCode.value
+        if (serviceEdition != null) parametreTilAltinn["serviceEdition"] = serviceEdition.value
+        if (filter != null) parametreTilAltinn["\$filter"] = filter
+
         parametreTilAltinn["\$top"] = top.toString()
         parametreTilAltinn["\$skip"] = skip.toString()
-        parametreTilAltinn["\$filter"] = filter
-
         parametreTilAltinn["subject"] = subject.value
 
         val (_, response, result) = with(

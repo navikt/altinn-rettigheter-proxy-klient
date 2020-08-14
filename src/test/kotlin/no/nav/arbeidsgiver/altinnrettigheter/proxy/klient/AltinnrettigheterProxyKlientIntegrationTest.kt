@@ -39,8 +39,27 @@ class AltinnrettigheterProxyKlientIntegrationTest {
         wireMockServer.resetAll()
     }
 
+    // API signature tester
+
     @Test
     fun `hentOrganisasjoner() kaller AltinnrettigheterProxy med riktige parametre og returnerer en liste av Altinn reportees`() {
+        wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
+                2,
+                false
+        ))
+
+        val organisasjoner = klient.hentOrganisasjoner(
+                selvbetjeningToken,
+                Subject(FNR_INNLOGGET_BRUKER),
+                false
+        )
+
+        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(false))
+        assertTrue { organisasjoner.size == 2 }
+    }
+
+    @Test
+    fun `hentOrganisasjoner() basert på rettighet kaller AltinnrettigheterProxy med riktige parametre og returnerer en liste av Altinn reportees`() {
         wireMockServer.stubFor(`altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
                 SYKEFRAVÆR_SERVICE_CODE,
                 SERVICE_EDITION)
@@ -50,12 +69,16 @@ class AltinnrettigheterProxyKlientIntegrationTest {
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION))
         assertTrue { organisasjoner.size == 2 }
     }
+
+
+    // Tester som beviser at klient kan gjøre flere kall for å hente alle organisasjoner
 
     @Test
     fun `hentOrganisasjoner() kaller AltinnrettigheterProxy flere ganger hvis bruker har tilgang til flere enn 499 virksomheter`() {
@@ -75,7 +98,8 @@ class AltinnrettigheterProxyKlientIntegrationTest {
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "0"))
@@ -107,7 +131,8 @@ class AltinnrettigheterProxyKlientIntegrationTest {
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "0"))
@@ -126,7 +151,7 @@ class AltinnrettigheterProxyKlientIntegrationTest {
         fun initClass() {
             wireMockServer = WireMockServer(WireMockConfiguration.wireMockConfig()
                     .port(PORT)
-                    .notifier(ConsoleNotifier(true)))
+                    .notifier(ConsoleNotifier(false)))
             wireMockServer.start()
         }
 

@@ -79,7 +79,8 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "0"))
@@ -107,7 +108,8 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
                     selvbetjeningToken,
                     Subject(FNR_INNLOGGET_BRUKER),
                     ServiceCode(INVALID_SERVICE_CODE),
-                    ServiceEdition(SERVICE_EDITION)
+                    ServiceEdition(SERVICE_EDITION),
+                    true
             )
             fail("Skulle har fått en exception")
         } catch (e: Exception) {
@@ -144,7 +146,8 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, FNR_INNLOGGET_BRUKER))
@@ -172,7 +175,8 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION))
@@ -196,7 +200,8 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION))
@@ -227,7 +232,8 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
                     selvbetjeningToken,
                     Subject(FNR_INNLOGGET_BRUKER),
                     ServiceCode(INVALID_SERVICE_CODE),
-                    ServiceEdition(SERVICE_EDITION)
+                    ServiceEdition(SERVICE_EDITION),
+                    true
             )
             fail("Skulle har fått en exception")
         } catch (e: Exception) {
@@ -262,7 +268,8 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
                     selvbetjeningToken,
                     Subject(FNR_INNLOGGET_BRUKER),
                     ServiceCode(INVALID_SERVICE_CODE),
-                    ServiceEdition(SERVICE_EDITION)
+                    ServiceEdition(SERVICE_EDITION),
+                    true
             )
             fail("Skulle har fått en exception")
         } catch (e: Exception) {
@@ -293,7 +300,8 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
                 selvbetjeningToken,
                 Subject(FNR_INNLOGGET_BRUKER),
                 ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
-                ServiceEdition(SERVICE_EDITION)
+                ServiceEdition(SERVICE_EDITION),
+                true
         )
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request med flere parametre`(
@@ -325,7 +333,7 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
         fun initClass() {
             wireMockServer = WireMockServer(WireMockConfiguration.wireMockConfig()
                     .port(PORT)
-                    .notifier(ConsoleNotifier(true)))
+                    .notifier(ConsoleNotifier(false)))
             wireMockServer.start()
         }
 

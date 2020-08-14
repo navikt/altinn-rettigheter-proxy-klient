@@ -1,6 +1,5 @@
 package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient
 
-import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock.*
@@ -11,7 +10,6 @@ import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxy
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyError
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.AltinnReportee
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.SelvbetjeningToken
 import org.apache.http.HttpStatus
 
 class AltinnrettigheterProxyKlientIntegrationTestUtils {
@@ -25,11 +23,34 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
         const val SERVICE_EDITION = "1"
 
         fun `altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
-                serviceCode: String,
-                serviceEdition: String,
                 antallReportees: Int = 2,
-                skip: String = "0"
+                medFilter: Boolean
         ): MappingBuilder {
+            return `altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
+                    null,
+                    null,
+                    antallReportees,
+                    "0",
+                    medFilter
+            )
+        }
+
+        fun `altinn-rettigheter-proxy returnerer 200 OK og en liste med AltinnReportees`(
+                serviceCode: String?,
+                serviceEdition: String?,
+                antallReportees: Int = 2,
+                skip: String = "0",
+                medFilter: Boolean = true
+        ): MappingBuilder {
+
+            val queryParametre = mutableMapOf(
+                    "top" to equalTo("500"),
+                    "skip" to equalTo(skip)
+            )
+
+            if (serviceCode != null) queryParametre["serviceCode"] = equalTo(serviceCode)
+            if (serviceEdition != null) queryParametre["serviceEdition"] = equalTo(serviceEdition)
+            if (medFilter) queryParametre["filter"] = equalTo(QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER)
 
             return get(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_API_ORGANISASJONER"))
                     .withHeader("Accept", equalTo("application/json"))
@@ -37,13 +58,7 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                     .withHeader(CORRELATION_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
                     .withHeader(CONSUMER_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
 
-                    .withQueryParams(mapOf(
-                            "serviceCode" to equalTo(serviceCode),
-                            "serviceEdition" to equalTo(serviceEdition),
-                            "top" to equalTo("500"),
-                            "skip" to equalTo(skip),
-                            "filter" to equalTo(QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER)
-                    ))
+                    .withQueryParams(queryParametre)
                     .willReturn(`200 response med en liste av reportees`(antallReportees))
         }
 
@@ -181,21 +196,36 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
 
 
         fun `altinn-rettigheter-proxy mottar riktig request`(
-                serviceCode: String,
-                serviceEdition: String,
-                skip: String = "0"
+                medFilter: Boolean = true
         ): RequestPatternBuilder {
-            return getRequestedFor(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_API_ORGANISASJONER"))
+            return `altinn-rettigheter-proxy mottar riktig request`(
+                    null,
+                    null,
+                    "0",
+                    medFilter
+            )
+        }
+
+        fun `altinn-rettigheter-proxy mottar riktig request`(
+                serviceCode: String?,
+                serviceEdition: String?,
+                skip: String = "0",
+                medFilter: Boolean = true
+        ): RequestPatternBuilder {
+            val request = getRequestedFor(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_API_ORGANISASJONER"))
                     .withHeader("Accept", containing("application/json"))
                     .withHeader("Accept", equalTo("application/json"))
                     .withHeader("Authorization", matching(NON_EMPTY_STRING_REGEX))
                     .withHeader(CORRELATION_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
                     .withHeader(CONSUMER_ID_HEADER_NAME, matching(NON_EMPTY_STRING_REGEX))
-                    .withQueryParam("serviceCode", equalTo(serviceCode))
-                    .withQueryParam("serviceEdition", equalTo(serviceEdition))
                     .withQueryParam("top", equalTo("500"))
                     .withQueryParam("skip", equalTo(skip))
-                    .withQueryParam("filter", equalTo(QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER))
+
+            if (serviceCode != null) request.withQueryParam("serviceCode", equalTo(serviceCode))
+            if (serviceEdition != null) request.withQueryParam("serviceEdition", equalTo(serviceEdition))
+            if (medFilter) request.withQueryParam("filter", equalTo(QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER))
+
+            return request
         }
 
         fun `altinn-rettigheter-proxy mottar riktig request med flere parametre`(

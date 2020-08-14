@@ -25,23 +25,23 @@ class AltinnrettigheterProxyKlient(
      * Hent alle organisasjoner i Altinn en bruker har rettigheter i.
      *  @param selvbetjeningToken - Selvbetjening token til innlogget bruker
      *  @param subject - Fødselsnummer til innlogget bruker (fallback funksjon)
-     *  @param filterPaaAktiveOrganisasjoner - Aktiver filtering på både Status og Type
+     *  @param filtrerPåAktiveOrganisasjoner - Aktiver filtering på både Status og Type
      *
      *  @return en liste av alle organisasjoner
-     *   - med Status: 'Active' og Type: 'Enterprise' | 'Business', når filterPaaAktiveOrganisasjoner er 'true'
-     *   - med Status: 'Active' | 'Inactive' og Type: 'Enterprise' | 'Business' | 'Person', når filterPaaAktiveOrganisasjoner er 'false'
+     *   - med Status: 'Active' og Type: 'Enterprise' | 'Business', når filtrerPåAktiveOrganisasjoner er 'true'
+     *   - med Status: 'Active' | 'Inactive' og Type: 'Enterprise' | 'Business' | 'Person', når filtrerPåAktiveOrganisasjoner er 'false'
      */
     fun hentOrganisasjoner(
             selvbetjeningToken: SelvbetjeningToken,
             subject: Subject,
-            filterPaaAktiveOrganisasjoner: Boolean
+            filtrerPåAktiveOrganisasjoner: Boolean
     ): List<AltinnReportee> {
         return hentOrganisasjonerMedEllerUtenRettigheter(
                 selvbetjeningToken,
                 subject,
                 null,
                 null,
-                filterPaaAktiveOrganisasjoner
+                filtrerPåAktiveOrganisasjoner
         )
     }
 
@@ -51,25 +51,25 @@ class AltinnrettigheterProxyKlient(
      *  @param subject - Fødselsnummer til innlogget bruker (fallback funksjon)
      *  @param serviceCode - Kode for rettigheter brukeren har for en organisasjon (henger sammen med ServiceEdition)
      *  @param serviceEdition
-     *  @param filterPaaAktiveOrganisasjoner - Aktiver filtering på både Status og Type
+     *  @param filtrerPåAktiveOrganisasjoner - Aktiver filtering på både Status og Type
      *
      *  @return en liste av alle organisasjoner
-     *   - med Status: 'Active' og Type: 'Enterprise' | 'Business', når filterPaaAktiveOrganisasjoner er 'true'
-     *   - med Status: 'Active' | 'Inactive' og Type: 'Enterprise' | 'Business' | 'Person', når filterPaaAktiveOrganisasjoner er 'false'
+     *   - med Status: 'Active' og Type: 'Enterprise' | 'Business', når filtrerPåAktiveOrganisasjoner er 'true'
+     *   - med Status: 'Active' | 'Inactive' og Type: 'Enterprise' | 'Business' | 'Person', når filtrerPåAktiveOrganisasjoner er 'false'
      */
-    fun hentOrganisasjonerBasertPåRettigheter(
+    fun hentOrganisasjoner(
             selvbetjeningToken: SelvbetjeningToken,
             subject: Subject,
             serviceCode: ServiceCode,
             serviceEdition: ServiceEdition,
-            filterPaaAktiveOrganisasjoner: Boolean
+            filtrerPåAktiveOrganisasjoner: Boolean
     ): List<AltinnReportee> {
         return hentOrganisasjonerMedEllerUtenRettigheter(
                 selvbetjeningToken,
                 subject,
                 serviceCode,
                 serviceEdition,
-                filterPaaAktiveOrganisasjoner
+                filtrerPåAktiveOrganisasjoner
         )
     }
 
@@ -79,12 +79,12 @@ class AltinnrettigheterProxyKlient(
             subject: Subject,
             serviceCode: ServiceCode?,
             serviceEdition: ServiceEdition?,
-            filterPaaAktiveOrganisasjoner: Boolean
+            filtrerPåAktiveOrganisasjoner: Boolean
     ): List<AltinnReportee> {
         val organisasjoner: ArrayList<AltinnReportee> = ArrayList()
         var detFinnesFlereOrganisasjoner = true
 
-        val filterValue = if (filterPaaAktiveOrganisasjoner) QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER else null
+        val filterValue = if (filtrerPåAktiveOrganisasjoner) QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER else null
 
         while (detFinnesFlereOrganisasjoner) {
             val nyeOrganisasjoner = hentOrganisasjonerMedFallbackFunksjonalitet(

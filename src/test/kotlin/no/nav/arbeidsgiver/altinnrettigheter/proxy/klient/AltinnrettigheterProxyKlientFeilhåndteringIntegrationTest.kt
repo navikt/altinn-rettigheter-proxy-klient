@@ -333,7 +333,7 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
         fun initClass() {
             wireMockServer = WireMockServer(WireMockConfiguration.wireMockConfig()
                     .port(PORT)
-                    .notifier(ConsoleNotifier(false)))
+                    .notifier(ConsoleNotifier(true)))
             wireMockServer.start()
         }
 

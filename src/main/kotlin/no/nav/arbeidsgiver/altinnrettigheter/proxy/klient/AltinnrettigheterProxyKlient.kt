@@ -15,11 +15,14 @@ import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.Altin
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.AltinnrettigheterProxyKlientFallbackException
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.*
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.utils.CorrelationIdUtils
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.utils.ResourceUtils
 import org.slf4j.LoggerFactory
 
 class AltinnrettigheterProxyKlient(
         private val config: AltinnrettigheterProxyKlientConfig
 ) {
+
+    private var klientVersjon: String = ResourceUtils.getKlientVersjon()
 
     /**
      * Hent alle organisasjoner i Altinn en bruker har rettigheter i.
@@ -162,7 +165,7 @@ class AltinnrettigheterProxyKlient(
                         .httpGet(parametreTilProxy.toList())
         ) {
             authentication().bearer(selvbetjeningToken.value)
-            headers[PROXY_KLIENT_VERSJON_HEADER_NAME] = PROXY_KLIENT_VERSJON
+            headers[PROXY_KLIENT_VERSJON_HEADER_NAME] = klientVersjon
             headers[CORRELATION_ID_HEADER_NAME] = CorrelationIdUtils.getCorrelationId()
             headers[CONSUMER_ID_HEADER_NAME] = config.proxy.consumerId
             headers[ACCEPT] = "application/json"
@@ -252,7 +255,6 @@ class AltinnrettigheterProxyKlient(
         const val QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER = "Type ne 'Person' and Status eq 'Active'"
 
         const val PROXY_KLIENT_VERSJON_HEADER_NAME = "X-Proxyklient-Versjon"
-        const val PROXY_KLIENT_VERSJON = "1.1.0"
         const val CORRELATION_ID_HEADER_NAME = "X-Correlation-ID"
         const val CONSUMER_ID_HEADER_NAME = "X-Consumer-ID"
 

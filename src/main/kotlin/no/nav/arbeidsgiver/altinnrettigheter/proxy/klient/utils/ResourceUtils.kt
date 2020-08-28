@@ -1,7 +1,7 @@
 package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.utils
 
 
-class ResourceUtils {
+internal class ResourceUtils {
 
     companion object {
         private const val RESOURCE_FILE = "/altinn-rettigheter-proxy-client.properties"

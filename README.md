@@ -34,19 +34,36 @@ AltinnrettigheterProxyKlientConfig config =
 AltinnrettigheterProxyKlient klient = new AltinnrettigheterProxyKlient(config);
 ```
 
-Listen av organisasjoner `AltinnReportee` der en bruker har spesifikk enkeltrettighet kan hentes på denne måten:
+Da skal det være mulig å hente listen av organisasjoner `AltinnReportee` en bruker har enkeltrettigheter i: 
+
+For en spesifikk tuple `serviceCode` og `serviceEdition` 
 ```java
 List<AltinnReportee> organisasjoner =  
     klient.hentOrganisasjoner(
         new SelvbetjeningToken(selvbetjeningTokenAsString),
         new Subject(fnrInnloggetBruker),
         new ServiceCode(serviceCode),
-        new ServiceEdition(serviceEdition)
+        new ServiceEdition(serviceEdition), 
+        true
     );
 ```
 
-hvor `selvbetjeningTokenAsString` er String verdi av `selvbetjening-idtoken` cookie til innlogget bruker
+For alle enkelterettigheter
 
+```java
+List<AltinnReportee> organisasjoner =  
+    klient.hentOrganisasjoner(
+        new SelvbetjeningToken(selvbetjeningTokenAsString),
+        new Subject(fnrInnloggetBruker) 
+        true
+     );
+```
+
+Hvor `selvbetjeningTokenAsString` er String verdi av `selvbetjening-idtoken` cookie til innlogget bruker. 
+
+Det er mulig å filtrere bort organisasjoner av type `Person` eller som ikke er aktive ved å sette siste parameteren `filterPåAktiveOrganisasjoner` til `true`
+
+                  
 ---
 # Lage og publisere en ny release
 ## Forutsetning

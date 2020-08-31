@@ -27,7 +27,7 @@ internal class ResourceUtils {
                         line -> line.split("=").toTypedArray()
                     }
 
-            return if (arrays.isEmpty()) emptyList() else arrays.map { array ->  Resource(array[0], array[1]) }
+            return arrays.map { array ->  Resource(array[0], array[1]) }
         }
     }
 }

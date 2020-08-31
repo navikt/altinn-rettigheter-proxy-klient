@@ -61,7 +61,7 @@ List<AltinnReportee> organisasjoner =
 
 Hvor `selvbetjeningTokenAsString` er String verdi av `selvbetjening-idtoken` cookie til innlogget bruker. 
 
-Det er mulig å filtrere bort organisasjoner av type `Person` eller som ikke er aktive ved å aktivere siste parameteren `filterPåAktiveOrganisasjoner`
+Det er mulig å filtrere bort organisasjoner av type `Person` eller som ikke er aktive ved å sette siste parameteren `filterPåAktiveOrganisasjoner` til `true`
 
                   
 ---

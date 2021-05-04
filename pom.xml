@@ -100,7 +100,7 @@
                     <execution>
                         <phase>pre-site</phase>
                         <goals>
-                            <goal>javadocJar</goal>
+                            <goal>dokka:javadocJar</goal>
                         </goals>
                     </execution>
                 </executions>

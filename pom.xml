@@ -6,7 +6,7 @@
     <artifactId>altinn-rettigheter-proxy-klient</artifactId>
     <version>2.0.2-RC1-SNAPSHOT</version>
     <packaging>jar</packaging>
-    
+
 
     <name>altinn-rettigheter-proxy-klient</name>
     <description>Arbeidsgiver - Klient bibliotek for Altinn-rettigheter-proxy</description>
@@ -29,7 +29,7 @@
 
     <properties>
         <java.version>11</java.version>
-        <kotlin.version>1.4.30</kotlin.version>
+        <kotlin.version>1.4.32</kotlin.version>
         <fuel.version>2.3.1</fuel.version>
         <jackson-module-kotlin.version>2.9.9</jackson-module-kotlin.version>
         <slf4j.version>1.7.25</slf4j.version>
@@ -93,6 +93,20 @@
             </plugin>
 
             <plugin>
+                <groupId>org.jetbrains.dokka</groupId>
+                <artifactId>dokka-maven-plugin</artifactId>
+                <version>1.4.32</version>
+                <executions>
+                    <execution>
+                        <phase>pre-site</phase>
+                        <goals>
+                            <goal>dokka</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
                 <version>${maven-release-plugin.version}</version>
@@ -102,6 +116,12 @@
                     <releaseProfiles>release</releaseProfiles>
                     <goals>deploy</goals>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>2.7</version>
             </plugin>
 
             <plugin>

@@ -40,6 +40,7 @@
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
     </properties>
 
     <distributionManagement>
@@ -91,17 +92,36 @@
                     </dependency>
                 </dependencies>
             </plugin>
-
             <plugin>
-                <groupId>org.jetbrains.dokka</groupId>
-                <artifactId>dokka-maven-plugin</artifactId>
-                <version>1.4.32</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven-jar-plugin.version}</version>
+                <!--  This is a workaround to create an empty javadoc file.
+                 Sonatype OSS requires all artifacts to have a javadoc file, but
+                 this artifact doesn't contain any Java source files, so we have
+                 to create a placeholder.
+                -->
                 <executions>
                     <execution>
-                        <phase>pre-site</phase>
+                        <id>empty-javadoc-jar</id>
+                        <phase>package</phase>
                         <goals>
-                            <goal>dokka:javadocJar</goal>
+                            <goal>jar</goal>
                         </goals>
+                        <configuration>
+                            <classifier>javadoc</classifier>
+                            <classesDirectory>${basedir}/src/main/javadoc</classesDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>jar-without-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>kotlin-client</classifier>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

@@ -27,3 +27,4 @@ fun <T> withCorrelationId(action: () -> T): T {
 
 fun getCorrelationId(): String =
     MDC.get(CORRELATION_ID_MDC_NAME)
+        ?: UUID.randomUUID().toString()

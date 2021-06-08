@@ -14,8 +14,9 @@ import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.Altin
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.AltinnrettigheterProxyKlientException
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.AltinnrettigheterProxyKlientFallbackException
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.*
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.utils.CorrelationIdUtils
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.utils.ResourceUtils
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.utils.getCorrelationId
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.utils.withCorrelationId
 import org.slf4j.LoggerFactory
 
 class AltinnrettigheterProxyKlient(
@@ -83,7 +84,7 @@ class AltinnrettigheterProxyKlient(
             serviceCode: ServiceCode?,
             serviceEdition: ServiceEdition?,
             filtrerPåAktiveOrganisasjoner: Boolean
-    ): List<AltinnReportee> {
+    ): List<AltinnReportee> = withCorrelationId {
         val organisasjoner: ArrayList<AltinnReportee> = ArrayList()
         var detFinnesFlereOrganisasjoner = true
 
@@ -113,7 +114,7 @@ class AltinnrettigheterProxyKlient(
             organisasjoner.addAll(nyeOrganisasjoner)
         }
 
-        return organisasjoner
+        return@withCorrelationId organisasjoner
     }
 
     private fun hentOrganisasjonerMedFallbackFunksjonalitet(
@@ -166,7 +167,7 @@ class AltinnrettigheterProxyKlient(
         ) {
             authentication().bearer(selvbetjeningToken.value)
             headers[PROXY_KLIENT_VERSJON_HEADER_NAME] = klientVersjon
-            headers[CORRELATION_ID_HEADER_NAME] = CorrelationIdUtils.getCorrelationId()
+            headers[CORRELATION_ID_HEADER_NAME] = getCorrelationId()
             headers[CONSUMER_ID_HEADER_NAME] = config.proxy.consumerId
             headers[ACCEPT] = "application/json"
 
@@ -219,7 +220,7 @@ class AltinnrettigheterProxyKlient(
         val (_, response, result) = with(
                 getAltinnURL(config.altinn.url).httpGet(parametreTilAltinn.toList())
         ) {
-            headers[CORRELATION_ID_HEADER_NAME] = CorrelationIdUtils.getCorrelationId()
+            headers[CORRELATION_ID_HEADER_NAME] = getCorrelationId()
             headers["X-NAV-APIKEY"] = config.altinn.altinnApiGwApiKey
             headers["APIKEY"] = config.altinn.altinnApiKey
             headers[ACCEPT] = "application/json"

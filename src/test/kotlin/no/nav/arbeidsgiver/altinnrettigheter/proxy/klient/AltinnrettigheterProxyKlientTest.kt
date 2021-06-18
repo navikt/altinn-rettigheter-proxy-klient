@@ -1,9 +1,9 @@
 package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient
 
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.PROXY_ENDEPUNKT_API_ORGANISASJONER
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.getAltinnrettigheterProxyURL
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.getAltinnURL
-import org.junit.Assert.*
+import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.getAltinnrettigheterProxyURL
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class AltinnrettigheterProxyKlientTest {

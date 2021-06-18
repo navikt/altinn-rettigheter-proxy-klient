@@ -8,7 +8,6 @@ import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxy
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.CORRELATION_ID_HEADER_NAME
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.PROXY_ENDEPUNKT_API_ORGANISASJONER
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlient.Companion.QUERY_PARAM_FILTER_AKTIVE_BEDRIFTER
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyError
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.model.AltinnReportee
 import org.apache.http.HttpStatus
 
@@ -62,13 +61,13 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                     .willReturn(`200 response med en liste av reportees`(antallReportees))
         }
 
-        fun `altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'kilde' og 'melding' i response body`(
-                serviceCode: String,
-                serviceEdition: String,
-                skip: String = "0",
-                httpStatusKode: Int,
-                kilde: ProxyError.Kilde,
-                melding: String
+        fun `altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'melding' og 'cause' i response body`(
+            serviceCode: String,
+            serviceEdition: String,
+            skip: String = "0",
+            httpStatusKode: Int,
+            melding: String,
+            cause: String
         ): MappingBuilder {
             return get(urlPathEqualTo("/proxy$PROXY_ENDEPUNKT_API_ORGANISASJONER"))
                     .withHeader("Accept", equalTo("application/json"))
@@ -82,9 +81,8 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                     .willReturn(aResponse()
                             .withStatus(httpStatusKode)
                             .withHeader("Content-Type", "application/json")
-                            .withBody("{" +
-                                    "\"origin\": \"${kilde.verdi}\"," +
-                                    "\"message\": \"${melding}\"}"
+                            .withBody(
+                                """{"cause": "$cause", "message": "$melding"}"""
                             )
                     )
         }
@@ -105,9 +103,8 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                     .willReturn(aResponse()
                             .withStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR)
                             .withHeader("Content-Type", "application/json")
-                            .withBody("{" +
-                                    "\"status\": \"500\"," +
-                                    "\"message\": \"Internal Server Error\"}"
+                            .withBody(
+                                """{"cause": "ukjent feil", "message": "Internal error"}"""
                             )
                     )
         }

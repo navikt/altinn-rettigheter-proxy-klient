@@ -4,7 +4,7 @@
 
     <groupId>no.nav.arbeidsgiver</groupId>
     <artifactId>altinn-rettigheter-proxy-klient</artifactId>
-    <version>2.0.2-SNAPSHOT</version>
+    <version>2.0.2-RC5</version>
     <packaging>jar</packaging>
     
 
@@ -204,7 +204,7 @@
         <developerConnection>scm:git:git@github.com:navikt/altinn-rettigheter-proxy-klient.git</developerConnection>
         <connection>scm:git:git@github.com:navikt/altinn-rettigheter-proxy-klient.git</connection>
         <url>https://github.com/navikt/altinn-rettigheter-proxy-klient</url>
-        <tag>altinn-rettigheter-proxy-klient-0.0.5</tag>
+        <tag>altinn-rettigheter-proxy-klient-2.0.2-RC5</tag>
     </scm>
 
     <repositories>

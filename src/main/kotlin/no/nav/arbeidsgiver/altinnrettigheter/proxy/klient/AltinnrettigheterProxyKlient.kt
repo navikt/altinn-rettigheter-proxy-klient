@@ -8,7 +8,6 @@ import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.jackson.responseObject
 import com.github.kittinunf.result.Result
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyError
-import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyErrorMedResponseBody
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.AltinnException
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.AltinnrettigheterProxyException
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.AltinnrettigheterProxyKlientException
@@ -175,22 +174,23 @@ class AltinnrettigheterProxyKlient(
         }
         when (result) {
             is Result.Failure -> {
-                val proxyErrorMedResponseBody = ProxyErrorMedResponseBody.parse(
+                val proxyError = ProxyError.parse(
                         response.body().toStream(),
                         response.statusCode
                 )
 
+                logger.info("""
+                    Mottok en feil med status '${proxyError.httpStatus}' 
+                    og melding '${proxyError.melding}'
+                    og årsak '${proxyError.cause}'
+                    """.trimIndent()
+                )
 
-                logger.info("Mottok en feil fra kilde '${proxyErrorMedResponseBody.kilde}' " +
-                        "med status '${proxyErrorMedResponseBody.httpStatus}' " +
-                        "og melding '${proxyErrorMedResponseBody.melding}'")
-
-                if ((response.isClientError && response.statusCode != 404) || proxyErrorMedResponseBody.kilde == ProxyError.Kilde.ALTINN) {
-                    throw AltinnException(proxyErrorMedResponseBody)
+                if (response.isClientError && response.statusCode != 404) {
+                    throw AltinnException(proxyError)
                 } else {
-                    throw AltinnrettigheterProxyException(proxyErrorMedResponseBody)
+                    throw AltinnrettigheterProxyException(proxyError)
                 }
-
 
             }
             is Result.Success -> return result.get()

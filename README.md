@@ -90,9 +90,9 @@ Tilgjengelige versjoner: https://repo1.maven.org/maven2/no/nav/arbeidsgiver/alti
 
 Spørsmål knyttet til koden eller prosjektet kan rettes mot:
 
-* Lars Andreas Tveiten, lars.andreas.van.woensel.kooy.tveiten@nav.no
-* Malaz Alkoj, malaz.alkoj@nav.no
-* Thomas Dufourd, thomas.dufourd@nav.no
+* Peter Brottveit Brock, peter.brottveit.bock@nav.no
+* Ken Gullaksen, ken.gullaksen@nav.no
+* Bendik Segrov Ibenholt, bendik.segrov.ibenholt@nav.no
 
 ## For NAV-ansatte
 

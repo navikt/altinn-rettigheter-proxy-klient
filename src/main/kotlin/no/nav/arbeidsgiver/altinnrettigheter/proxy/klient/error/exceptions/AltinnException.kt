@@ -3,5 +3,6 @@ package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyError
 import java.lang.RuntimeException
 
-class AltinnException(proxyError: ProxyError)
+@Suppress("CanBeParameter")
+class AltinnException(val proxyError: ProxyError)
     : RuntimeException(proxyError.melding)

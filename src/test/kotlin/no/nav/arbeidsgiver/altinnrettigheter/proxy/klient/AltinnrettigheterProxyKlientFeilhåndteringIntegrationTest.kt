@@ -28,6 +28,7 @@ import org.junit.AfterClass
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.fail
@@ -207,7 +208,7 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
             fail("Skulle har fått en exception")
         } catch (e: Exception) {
             assertEquals(
-                    "Fallback kall mot Altinn feiler. Med HTTP kode '400' og melding 'Bad Request'",
+                    "Fallback kall mot Altinn feiler med HTTP feil 400 'Bad Request'",
                     e.message
             )
         }
@@ -242,10 +243,9 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
             )
             fail("Skulle har fått en exception")
         } catch (e: Exception) {
-            assertTrue(
-                    (e.message ?: "Ingen melding").startsWith(
-                            "Fallback kall mot Altinn feiler. Med melding 'Connection refused"
-                    )
+            assertContains(
+                e.message ?: "Ingen melding",
+                "Fallback kall mot Altinn feiler .* 'Connection refused".toRegex()
             )
         }
     }

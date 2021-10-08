@@ -1,12 +1,13 @@
 package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient
 
-import com.github.kittinunf.fuel.core.Headers.Companion.ACCEPT
-import com.github.kittinunf.fuel.core.extensions.authentication
-import com.github.kittinunf.fuel.core.isClientError
-import com.github.kittinunf.fuel.core.isServerError
-import com.github.kittinunf.fuel.httpGet
-import com.github.kittinunf.fuel.jackson.responseObject
-import com.github.kittinunf.result.Result
+import io.ktor.client.*
+import io.ktor.client.engine.apache.*
+import io.ktor.client.features.*
+import io.ktor.client.features.json.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.utils.io.jvm.javaio.*
+import kotlinx.coroutines.runBlocking
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyError
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.AltinnException
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.AltinnrettigheterProxyException
@@ -23,6 +24,12 @@ class AltinnrettigheterProxyKlient(
 ) {
 
     private var klientVersjon: String = ResourceUtils.getKlientVersjon()
+
+    private var httpClient = HttpClient(Apache) {
+        install(JsonFeature) {
+            serializer = JacksonSerializer()
+        }
+    }
 
     /**
      * Hent alle organisasjoner i Altinn en bruker har rettigheter i.
@@ -151,32 +158,32 @@ class AltinnrettigheterProxyKlient(
             filter: String?
     ): List<AltinnReportee> {
 
-        val parametreTilProxy = mutableMapOf<String, String>()
-
-        if (serviceCode != null) parametreTilProxy["serviceCode"] = serviceCode.value
-        if (serviceEdition != null) parametreTilProxy["serviceEdition"] = serviceEdition.value
-        if (filter != null) parametreTilProxy["filter"] = filter
-
-        parametreTilProxy["top"] = top.toString()
-        parametreTilProxy["skip"] = skip.toString()
-
-        val (_, response, result) = with(
-                getAltinnrettigheterProxyURL(config.proxy.url, PROXY_ENDEPUNKT_API_ORGANISASJONER)
-                        .httpGet(parametreTilProxy.toList())
-        ) {
-            authentication().bearer(selvbetjeningToken.value)
-            headers[PROXY_KLIENT_VERSJON_HEADER_NAME] = klientVersjon
-            headers[CORRELATION_ID_HEADER_NAME] = getCorrelationId()
-            headers[CONSUMER_ID_HEADER_NAME] = config.proxy.consumerId
-            headers[ACCEPT] = "application/json"
-
-            responseObject<List<AltinnReportee>>()
+        val parametreTilProxy = mutableListOf<Pair<String, String>>().apply {
+            add("top" to top.toString())
+            add("skip" to skip.toString())
+            if (serviceCode != null) add("serviceCode" to serviceCode.value)
+            if (serviceEdition != null) add("serviceEdition" to serviceEdition.value)
+            if (filter != null) add("filter" to filter)
         }
-        when (result) {
-            is Result.Failure -> {
+
+
+        val url = getAltinnrettigheterProxyURL(config.proxy.url, PROXY_ENDEPUNKT_API_ORGANISASJONER) +
+                "?" + parametreTilProxy.formUrlEncode()
+
+        return runBlocking {
+            try {
+                httpClient.get<List<AltinnReportee>>(url) {
+                    headers {
+                        append("Authorization", "Bearer ${selvbetjeningToken.value}")
+                        append(PROXY_KLIENT_VERSJON_HEADER_NAME, klientVersjon)
+                        append(CORRELATION_ID_HEADER_NAME, getCorrelationId())
+                        append(CONSUMER_ID_HEADER_NAME, config.proxy.consumerId)
+                    }
+                }
+            } catch (e: ResponseException) {
                 val proxyError = ProxyError.parse(
-                        response.body().toStream(),
-                        response.statusCode
+                    e.response.content.toInputStream(),
+                    e.response.status.value
                 )
 
                 logger.info("""
@@ -186,14 +193,19 @@ class AltinnrettigheterProxyKlient(
                     """.trimIndent()
                 )
 
-                if (response.isClientError && response.statusCode != 404) {
+                if (e is ClientRequestException && e.response.status.value != 404) {
                     throw AltinnException(proxyError)
                 } else {
                     throw AltinnrettigheterProxyException(proxyError)
                 }
-
+            } catch (e: Exception) {
+                logger.info("feil i kall mot altinn-proxy", e)
+                throw AltinnrettigheterProxyException(
+                    ProxyError(
+                        0, e.message ?: "ingen message", ""
+                    )
+                )
             }
-            is Result.Success -> return result.get()
         }
     }
 
@@ -205,49 +217,41 @@ class AltinnrettigheterProxyKlient(
             skip: Number,
             filter: String?
     ): List<AltinnReportee> {
-        val parametreTilAltinn = mutableMapOf<String, String>()
-
-        parametreTilAltinn["ForceEIAuthentication"] = ""
-
-        if (serviceCode != null) parametreTilAltinn["serviceCode"] = serviceCode.value
-        if (serviceEdition != null) parametreTilAltinn["serviceEdition"] = serviceEdition.value
-        if (filter != null) parametreTilAltinn["\$filter"] = filter
-
-        parametreTilAltinn["\$top"] = top.toString()
-        parametreTilAltinn["\$skip"] = skip.toString()
-        parametreTilAltinn["subject"] = subject.value
-
-        val (_, response, result) = with(
-                getAltinnURL(config.altinn.url).httpGet(parametreTilAltinn.toList())
-        ) {
-            headers[CORRELATION_ID_HEADER_NAME] = getCorrelationId()
-            headers["X-NAV-APIKEY"] = config.altinn.altinnApiGwApiKey
-            headers["APIKEY"] = config.altinn.altinnApiKey
-            headers[ACCEPT] = "application/json"
-
-            responseObject<List<AltinnReportee>>()
+        val parametreTilAltinn = mutableListOf<Pair<String, String>>().apply {
+            add("ForceEIAuthentication" to "")
+            add("\$top" to top.toString())
+            add("\$skip" to skip.toString())
+            add("subject" to subject.value)
+            if (serviceCode != null) add("serviceCode" to serviceCode.value)
+            if (serviceEdition != null) add("serviceEdition" to serviceEdition.value)
+            if (filter != null) add("\$filter" to filter)
         }
-        when (result) {
-            is Result.Failure -> {
-                var melding = "Fallback kall mot Altinn feiler. "
 
-                melding += if (!response.isClientError && !response.isServerError) {
-                    "Med melding '${result.getException().message}' "
-                } else {
-                    "Med HTTP kode '${response.statusCode}' " +
-                            "og melding '${response.responseMessage}'"
+        val url = getAltinnURL(config.altinn.url) + "?" + parametreTilAltinn.formUrlEncode()
+
+        return runBlocking {
+            try {
+                httpClient.get<List<AltinnReportee>>(url) {
+                    headers {
+                        append(CORRELATION_ID_HEADER_NAME, getCorrelationId())
+                        append("X-NAV-APIKEY", config.altinn.altinnApiGwApiKey)
+                        append("APIKEY", config.altinn.altinnApiKey)
+                    }
                 }
-
+            } catch (e: ResponseException) {
+                val melding = "Fallback kall mot Altinn feiler " +
+                        "med HTTP feil ${e.response.status.value} " +
+                        "'${e.response.status.description}'"
                 logger.warn(melding)
-                throw AltinnrettigheterProxyKlientFallbackException(melding, result.getException())
-            }
-            is Result.Success -> {
-                logger.info("Fallback kall til Altinn gjennomført")
-                return result.get()
+                throw AltinnrettigheterProxyKlientFallbackException(melding, e)
+            } catch (e: Exception) {
+                val melding = "Fallback kall mot Altinn feiler " +
+                    "med exception: '${e.message}' "
+                logger.warn(melding, e)
+                throw AltinnrettigheterProxyKlientFallbackException(melding, e)
             }
         }
     }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java)

@@ -5,6 +5,7 @@ import io.ktor.client.engine.apache.*
 import io.ktor.client.features.*
 import io.ktor.client.features.json.*
 import io.ktor.client.request.*
+import io.ktor.http.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.runBlocking
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyError
@@ -157,26 +158,26 @@ class AltinnrettigheterProxyKlient(
             filter: String?
     ): List<AltinnReportee> {
 
-        val parametreTilProxy = mutableMapOf<String, String>()
+        val parametreTilProxy = mutableListOf<Pair<String, String>>().apply {
+            add("top" to top.toString())
+            add("skip" to skip.toString())
+            if (serviceCode != null) add("serviceCode" to serviceCode.value)
+            if (serviceEdition != null) add("serviceEdition" to serviceEdition.value)
+            if (filter != null) add("filter" to filter)
+        }
 
-        if (serviceCode != null) parametreTilProxy["serviceCode"] = serviceCode.value
-        if (serviceEdition != null) parametreTilProxy["serviceEdition"] = serviceEdition.value
-        if (filter != null) parametreTilProxy["filter"] = filter
 
-        parametreTilProxy["top"] = top.toString()
-        parametreTilProxy["skip"] = skip.toString()
-
-        val url = getAltinnrettigheterProxyURL(config.proxy.url, PROXY_ENDEPUNKT_API_ORGANISASJONER)
+        val url = getAltinnrettigheterProxyURL(config.proxy.url, PROXY_ENDEPUNKT_API_ORGANISASJONER) +
+                "?" + parametreTilProxy.formUrlEncode()
 
         return runBlocking {
             try {
                 httpClient.get<List<AltinnReportee>>(url) {
                     headers {
-                        append("Authentication", "Bearer ${selvbetjeningToken.value}")
+                        append("Authorization", "Bearer ${selvbetjeningToken.value}")
                         append(PROXY_KLIENT_VERSJON_HEADER_NAME, klientVersjon)
                         append(CORRELATION_ID_HEADER_NAME, getCorrelationId())
                         append(CONSUMER_ID_HEADER_NAME, config.proxy.consumerId)
-                        append("Accept", "application/json")
                     }
                 }
             } catch (e: ResponseException) {
@@ -197,6 +198,13 @@ class AltinnrettigheterProxyKlient(
                 } else {
                     throw AltinnrettigheterProxyException(proxyError)
                 }
+            } catch (e: Exception) {
+                logger.info("feil i kall mot altinn-proxy", e)
+                throw AltinnrettigheterProxyException(
+                    ProxyError(
+                        0, e.message ?: "ingen message", ""
+                    )
+                )
             }
         }
     }
@@ -209,19 +217,17 @@ class AltinnrettigheterProxyKlient(
             skip: Number,
             filter: String?
     ): List<AltinnReportee> {
-        val parametreTilAltinn = mutableMapOf<String, String>()
+        val parametreTilAltinn = mutableListOf<Pair<String, String>>().apply {
+            add("ForceEIAuthentication" to "")
+            add("\$top" to top.toString())
+            add("\$skip" to skip.toString())
+            add("subject" to subject.value)
+            if (serviceCode != null) add("serviceCode" to serviceCode.value)
+            if (serviceEdition != null) add("serviceEdition" to serviceEdition.value)
+            if (filter != null) add("\$filter" to filter)
+        }
 
-        parametreTilAltinn["ForceEIAuthentication"] = ""
-
-        if (serviceCode != null) parametreTilAltinn["serviceCode"] = serviceCode.value
-        if (serviceEdition != null) parametreTilAltinn["serviceEdition"] = serviceEdition.value
-        if (filter != null) parametreTilAltinn["\$filter"] = filter
-
-        parametreTilAltinn["\$top"] = top.toString()
-        parametreTilAltinn["\$skip"] = skip.toString()
-        parametreTilAltinn["subject"] = subject.value
-
-        val url = getAltinnURL(config.altinn.url)
+        val url = getAltinnURL(config.altinn.url) + "?" + parametreTilAltinn.formUrlEncode()
 
         return runBlocking {
             try {
@@ -230,7 +236,6 @@ class AltinnrettigheterProxyKlient(
                         append(CORRELATION_ID_HEADER_NAME, getCorrelationId())
                         append("X-NAV-APIKEY", config.altinn.altinnApiGwApiKey)
                         append("APIKEY", config.altinn.altinnApiKey)
-                        append("Accept", "application/json")
                     }
                 }
             } catch (e: ResponseException) {

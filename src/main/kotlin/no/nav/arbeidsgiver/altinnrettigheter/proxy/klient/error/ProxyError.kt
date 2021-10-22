@@ -13,6 +13,8 @@ open class ProxyError(
 ) {
 
     companion object {
+        private val mapper = jacksonObjectMapper()
+
         fun parse(body: InputStream, httpStatus: Int): ProxyError {
             val inputAsString = body.bufferedReader().use { it.readText() }
             val proxyResponseIErrorBody = parseBody(inputAsString)
@@ -24,13 +26,15 @@ open class ProxyError(
         }
 
         private fun parseBody(inputAsString: String): ProxyResponseIErrorBody {
-            val mapper = jacksonObjectMapper()
+            if (inputAsString.isBlank()) {
+                return ProxyResponseIErrorBody(message = "", cause = "")
+            }
 
             return try {
                 mapper.readValue(inputAsString)
             } catch (e: Exception) {
-                logger.error("Kunne ikke parse response body `${inputAsString}`. Årsak: '${e.message}'", e)
-                ProxyResponseIErrorBody("Uhåndtert feil i proxy", e.message!!)
+                logger.warn("Kunne ikke parse response body `${inputAsString}`. Årsak: '${e.message}'", e)
+                ProxyResponseIErrorBody("Kunne ikke parse response body `${inputAsString}`", e.message!!)
             }
         }
 

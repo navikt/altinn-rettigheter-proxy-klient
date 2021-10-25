@@ -152,12 +152,13 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
         private fun generateAltinnReporteeJson(antall: Int): List<String> {
             return List(antall) { index ->
                 getAltinnReporteeJson(AltinnReportee(
-                        "name_$index",
-                        "Enterprise",
-                        "0",
-                        "$index",
-                        "AS",
-                        "Active"
+                    name = "name_$index",
+                    type = "Enterprise",
+                    parentOrganizationNumber = "0",
+                    organizationNumber = "$index",
+                    organizationForm = "AS",
+                    status = "Active",
+                    socialSecurityNumber = null
                 ))
             }
         }

@@ -20,5 +20,7 @@ data class AltinnReportee(
         @JsonProperty("OrganizationForm")
         val organizationForm: String?,
         @JsonProperty("Status")
-        val status: String?
+        val status: String?,
+        @JsonProperty("SocialSecurityNumber")
+        val socialSecurityNumber: String?,
 ) : Serializable

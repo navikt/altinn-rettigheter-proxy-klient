@@ -1,6 +1,9 @@
 package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient
 
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.AltinnrettigheterProxyKlientIntegrationTestUtils.Companion.FNR_INNLOGGET_BRUKER
@@ -139,6 +142,29 @@ class AltinnrettigheterProxyKlientIntegrationTest {
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "500"))
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(SYKEFRAVÆR_SERVICE_CODE, SERVICE_EDITION, "1000"))
         assertTrue { organisasjoner.size == 1321 }
+    }
+
+    @Test
+    fun `hentOrganisasjoner() takler respons som er person pga konkurs`() {
+        wireMockServer.stubFor(get(anyUrl())
+            .willReturn(
+                WireMock.aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("""
+                    [{"Name":"Blarg Klarb Blarbland","Type":"Person","SocialSecurityNumber":"***********"}]
+                """.trimIndent())
+            ))
+
+        val organisasjoner = klient.hentOrganisasjoner(
+                selvbetjeningToken,
+                Subject(FNR_INNLOGGET_BRUKER),
+                ServiceCode(SYKEFRAVÆR_SERVICE_CODE),
+                ServiceEdition(SERVICE_EDITION),
+                true
+        )
+
+        assertTrue { organisasjoner.size == 1 }
     }
 
     companion object {

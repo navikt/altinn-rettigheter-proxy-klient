@@ -26,11 +26,9 @@ open class ProxyError(
         }
 
         private fun parseBody(inputAsString: String): ProxyResponseIErrorBody {
-            if (inputAsString.isBlank()) {
-                return ProxyResponseIErrorBody(message = "", cause = "")
-            }
-
-            return try {
+            return if (inputAsString.isBlank()) {
+                ProxyResponseIErrorBody(message = "", cause = "")
+            } else try {
                 mapper.readValue(inputAsString)
             } catch (e: Exception) {
                 logger.warn("Kunne ikke parse response body `${inputAsString}`. Årsak: '${e.message}'", e)

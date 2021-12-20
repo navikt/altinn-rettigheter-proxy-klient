@@ -1,5 +1,6 @@
 package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error
 
+import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.Logger
@@ -9,7 +10,7 @@ import java.io.InputStream
 open class ProxyError(
     val httpStatus: Int,
     val melding: String,
-    val cause: String
+    val cause: String,
 ) {
 
     companion object {
@@ -30,7 +31,7 @@ open class ProxyError(
                 ProxyResponseIErrorBody(message = "", cause = "")
             } else try {
                 mapper.readValue(inputAsString)
-            } catch (e: Exception) {
+            } catch (e: JsonProcessingException) {
                 logger.warn("Kunne ikke parse response body `${inputAsString}`. Årsak: '${e.message}'", e)
                 ProxyResponseIErrorBody("Kunne ikke parse response body `${inputAsString}`", e.message!!)
             }

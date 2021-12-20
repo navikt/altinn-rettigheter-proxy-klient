@@ -5,6 +5,7 @@ import io.ktor.client.engine.apache.*
 import io.ktor.client.features.*
 import io.ktor.client.features.json.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.runBlocking
@@ -172,7 +173,7 @@ class AltinnrettigheterProxyKlient(
 
         return runBlocking {
             try {
-                httpClient.get<List<AltinnReportee>>(url) {
+                httpClient.get(url) {
                     headers {
                         append("Authorization", "Bearer ${selvbetjeningToken.value}")
                         append(PROXY_KLIENT_VERSJON_HEADER_NAME, klientVersjon)
@@ -181,10 +182,22 @@ class AltinnrettigheterProxyKlient(
                     }
                 }
             } catch (e: ResponseException) {
-                val proxyError = ProxyError.parse(
-                    e.response.content.toInputStream(),
-                    e.response.status.value
-                )
+                logger.info("mottok exception med content-type: ${e.response.contentType()}")
+                val proxyError = when (e.response.contentType()) {
+                    ContentType.Application.Json -> {
+                        ProxyError.parse(
+                            e.response.content.toInputStream(),
+                            e.response.status.value
+                        )
+                    }
+                    else -> {
+                        ProxyError(
+                            httpStatus = e.response.status.value,
+                            melding = e.response.readText(),
+                            cause = "ukjent feil"
+                        )
+                    }
+                }
 
                 logger.info("""
                     Mottok en feil med status '${proxyError.httpStatus}' 
@@ -231,7 +244,7 @@ class AltinnrettigheterProxyKlient(
 
         return runBlocking {
             try {
-                httpClient.get<List<AltinnReportee>>(url) {
+                httpClient.get(url) {
                     headers {
                         append(CORRELATION_ID_HEADER_NAME, getCorrelationId())
                         append("X-NAV-APIKEY", config.altinn.altinnApiGwApiKey)
@@ -239,14 +252,12 @@ class AltinnrettigheterProxyKlient(
                     }
                 }
             } catch (e: ResponseException) {
-                val melding = "Fallback kall mot Altinn feiler " +
-                        "med HTTP feil ${e.response.status.value} " +
-                        "'${e.response.status.description}'"
+                val melding = "Fallback kall mot Altinn feiler med HTTP feil " +
+                        "${e.response.status.value} '${e.response.status.description}'"
                 logger.warn(melding)
                 throw AltinnrettigheterProxyKlientFallbackException(melding, e)
             } catch (e: Exception) {
-                val melding = "Fallback kall mot Altinn feiler " +
-                    "med exception: '${e.message}' "
+                val melding = "Fallback kall mot Altinn feiler med exception: '${e.message}' "
                 logger.warn(melding, e)
                 throw AltinnrettigheterProxyKlientFallbackException(melding, e)
             }

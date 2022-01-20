@@ -193,7 +193,7 @@ class AltinnrettigheterProxyKlient(
                     else -> {
                         ProxyError(
                             httpStatus = e.response.status.value,
-                            melding = e.response.readText(),
+                            melding = e.message ?: e.response.status.toString(),
                             cause = "ukjent feil"
                         )
                     }

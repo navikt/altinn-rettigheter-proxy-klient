@@ -5,7 +5,6 @@ import io.ktor.client.engine.apache.*
 import io.ktor.client.features.*
 import io.ktor.client.features.json.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.runBlocking
@@ -187,7 +186,7 @@ class AltinnrettigheterProxyKlient(
                     ContentType.Application.Json -> {
                         ProxyError.parse(
                             e.response.content.toInputStream(),
-                            e.response.status.value
+                            e.response.status
                         )
                     }
                     else -> {

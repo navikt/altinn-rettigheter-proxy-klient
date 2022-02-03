@@ -4,12 +4,6 @@ Altinnrettigheter-proxy-klient
 Bibliotek som tilbyr en Http klient til altinn-rettigheter-proxy.
 Klienten vil forsøke å kontakte Altinn via proxyen, som tilbyr caching på tvers av ulike tjenester i Nav. Klienten har en innebygd feilhåndtering, slik at dersom kall mot proxyen feiler vil det gjøres et nytt kall direkte mot Altinn sitt API.
 
-# Komme i gang
-
-Biblioteket er skrevet i Kotlin. Koden kompileres med maven og produserer en jar fil `altinn-rettigheter-proxy-klient-{version}.jar`
-
-`mvn clean install`
-
 # Bruk av AltinnrettigheterProxyKlient 
 
 Biblioteket importeres i klientapplikasjon slik (eksempel med maven)
@@ -28,8 +22,19 @@ String consumerId = "navn-til-klient-applikasjon";
 AltinnrettigheterProxyKlientConfig config = 
     new AltinnrettigheterProxyKlientConfig(
         new ProxyConfig(consumerId, altinnProxyUrl),
-        new AltinnConfig(altinnUrl, altinnApikey, altinnAPIGWApikey)
     );
+
+AltinnrettigheterProxyKlient klient = new AltinnrettigheterProxyKlient(config);
+```
+eller slik, hvis du ønsker fall-back-funksjonalitet
+```java
+String consumerId = "navn-til-klient-applikasjon";
+
+AltinnrettigheterProxyKlientConfig config =
+    new AltinnrettigheterProxyKlientConfig(
+         new ProxyConfig(consumerId, altinnProxyUrl),
+         new AltinnConfig(altinnUrl, altinnApikey, altinnAPIGWApikey)
+);
 
 AltinnrettigheterProxyKlient klient = new AltinnrettigheterProxyKlient(config);
 ```
@@ -64,7 +69,11 @@ Hvor `selvbetjeningTokenAsString` er String verdi av `selvbetjening-idtoken` coo
 Det er mulig å filtrere bort organisasjoner av type `Person` eller som ikke er aktive ved å sette siste parameteren `filterPåAktiveOrganisasjoner` til `true`
 
                   
----
+
+## Komme i gang som utvikler
+Biblioteket er skrevet i Kotlin. Koden kompileres med maven og produserer en jar fil `altinn-rettigheter-proxy-klient-{version}.jar`
+
+`mvn clean install`
 # Lage og publisere en ny release
 ## Forutsetning
 Release tag skal være signert. Derfor må signering av commits være aktivert per default, med f.eks `git config commit.gpgsign true`

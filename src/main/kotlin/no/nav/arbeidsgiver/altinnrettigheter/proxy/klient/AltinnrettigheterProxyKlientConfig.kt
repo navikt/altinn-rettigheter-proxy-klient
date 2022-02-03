@@ -1,8 +1,10 @@
 package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient
 
-data class AltinnrettigheterProxyKlientConfig(
+data class AltinnrettigheterProxyKlientConfig
+@JvmOverloads
+constructor (
         val proxy: ProxyConfig,
-        val altinn: AltinnConfig
+        val altinn: AltinnConfig? = null,
 )
 
 data class AltinnConfig(
@@ -12,6 +14,6 @@ data class AltinnConfig(
 )
 
 data class ProxyConfig(
-        val consumerId: String,
+        val consumerId: String?,
         val url: String
 )

@@ -137,7 +137,11 @@ class AltinnrettigheterProxyKlient(
         } catch (proxyException: AltinnrettigheterProxyException) {
             logger.warn("Fikk en feil i altinn-rettigheter-proxy med melding '${proxyException.message}'. " +
                     "Gjør et nytt forsøk ved å kalle Altinn direkte.")
-            hentOrganisasjonerIAltinn(subject, serviceCode, serviceEdition, top, skip, filter)
+            if (config.altinn != null) {
+                hentOrganisasjonerIAltinn(config.altinn, subject, serviceCode, serviceEdition, top, skip, filter)
+            } else {
+                throw AltinnrettigheterProxyKlientException("Feil i altinn-rettigheter-proxy", proxyException)
+            }
         } catch (altinnException: AltinnException) {
             logger.warn("Fikk exception i Altinn med følgende melding '${altinnException.message}'. " +
                     "Exception fra Altinn håndteres av klient applikasjon")
@@ -177,7 +181,9 @@ class AltinnrettigheterProxyKlient(
                         append("Authorization", "Bearer ${selvbetjeningToken.value}")
                         append(PROXY_KLIENT_VERSJON_HEADER_NAME, klientVersjon)
                         append(CORRELATION_ID_HEADER_NAME, getCorrelationId())
-                        append(CONSUMER_ID_HEADER_NAME, config.proxy.consumerId)
+                        if (config.proxy.consumerId != null) {
+                            append(CONSUMER_ID_HEADER_NAME, config.proxy.consumerId)
+                        }
                     }
                 }
             } catch (e: ResponseException) {
@@ -222,6 +228,7 @@ class AltinnrettigheterProxyKlient(
     }
 
     private fun hentOrganisasjonerIAltinn(
+            altinnConfig: AltinnConfig,
             subject: Subject,
             serviceCode: ServiceCode?,
             serviceEdition: ServiceEdition?,
@@ -239,15 +246,15 @@ class AltinnrettigheterProxyKlient(
             if (filter != null) add("\$filter" to filter)
         }
 
-        val url = getAltinnURL(config.altinn.url) + "?" + parametreTilAltinn.formUrlEncode()
+        val url = getAltinnURL(altinnConfig.url) + "?" + parametreTilAltinn.formUrlEncode()
 
         return runBlocking {
             try {
                 httpClient.get(url) {
                     headers {
                         append(CORRELATION_ID_HEADER_NAME, getCorrelationId())
-                        append("X-NAV-APIKEY", config.altinn.altinnApiGwApiKey)
-                        append("APIKEY", config.altinn.altinnApiKey)
+                        append("X-NAV-APIKEY", altinnConfig.altinnApiGwApiKey)
+                        append("APIKEY", altinnConfig.altinnApiKey)
                     }
                 }
             } catch (e: ResponseException) {

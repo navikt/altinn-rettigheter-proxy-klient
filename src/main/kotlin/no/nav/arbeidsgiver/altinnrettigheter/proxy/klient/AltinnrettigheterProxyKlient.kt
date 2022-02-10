@@ -42,7 +42,7 @@ class AltinnrettigheterProxyKlient(
      *   - med Status: 'Active' | 'Inactive' og Type: 'Enterprise' | 'Business' | 'Person', når filtrerPåAktiveOrganisasjoner er 'false'
      */
     fun hentOrganisasjoner(
-            selvbetjeningToken: SelvbetjeningToken,
+            selvbetjeningToken: Token,
             subject: Subject,
             filtrerPåAktiveOrganisasjoner: Boolean
     ): List<AltinnReportee> {
@@ -68,7 +68,7 @@ class AltinnrettigheterProxyKlient(
      *   - med Status: 'Active' | 'Inactive' og Type: 'Enterprise' | 'Business' | 'Person', når filtrerPåAktiveOrganisasjoner er 'false'
      */
     fun hentOrganisasjoner(
-            selvbetjeningToken: SelvbetjeningToken,
+            selvbetjeningToken: Token,
             subject: Subject,
             serviceCode: ServiceCode,
             serviceEdition: ServiceEdition,
@@ -85,7 +85,7 @@ class AltinnrettigheterProxyKlient(
 
 
     private fun hentOrganisasjonerMedEllerUtenRettigheter(
-            selvbetjeningToken: SelvbetjeningToken,
+            selvbetjeningToken: Token,
             subject: Subject,
             serviceCode: ServiceCode?,
             serviceEdition: ServiceEdition?,
@@ -124,7 +124,7 @@ class AltinnrettigheterProxyKlient(
     }
 
     private fun hentOrganisasjonerMedFallbackFunksjonalitet(
-            selvbetjeningToken: SelvbetjeningToken,
+            selvbetjeningToken: Token,
             subject: Subject,
             serviceCode: ServiceCode?,
             serviceEdition: ServiceEdition?,
@@ -154,7 +154,7 @@ class AltinnrettigheterProxyKlient(
     }
 
     private fun hentOrganisasjonerViaAltinnrettigheterProxy(
-            selvbetjeningToken: SelvbetjeningToken,
+            selvbetjeningToken: Token,
             serviceCode: ServiceCode?,
             serviceEdition: ServiceEdition?,
             top: Number,

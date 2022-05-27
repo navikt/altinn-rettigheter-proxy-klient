@@ -108,9 +108,10 @@ class AltinnrettigheterProxyKlient(
             )
 
             if (nyeOrganisasjoner.size > DEFAULT_PAGE_SIZE) {
-                logger.error("Altinn returnerer flere organisasjoner (${nyeOrganisasjoner.size}) " +
-                        "enn det vi spurte om (${DEFAULT_PAGE_SIZE}). " +
-                        "Dette medfører at brukeren ikke får tilgang til alle bedriftene sine")
+                logger.error(
+                    "Altinn returnerer flere organisasjoner ({}) enn det vi spurte om ({}). Dette medfører at brukeren ikke får tilgang til alle bedriftene sine",
+                    nyeOrganisasjoner.size, DEFAULT_PAGE_SIZE
+                )
             }
 
             if (nyeOrganisasjoner.size != DEFAULT_PAGE_SIZE) {
@@ -135,20 +136,26 @@ class AltinnrettigheterProxyKlient(
         return try {
             hentOrganisasjonerViaAltinnrettigheterProxy(selvbetjeningToken, serviceCode, serviceEdition, top, skip, filter)
         } catch (proxyException: AltinnrettigheterProxyException) {
-            logger.warn("Fikk en feil i altinn-rettigheter-proxy med melding '${proxyException.message}'. " +
-                    "Gjør et nytt forsøk ved å kalle Altinn direkte.")
             if (config.altinn != null) {
+                logger.info(
+                    "Fikk en feil i altinn-rettigheter-proxy med melding '{}'. Gjør et nytt forsøk ved å kalle Altinn direkte.",
+                    proxyException.message
+                )
                 hentOrganisasjonerIAltinn(config.altinn, subject, serviceCode, serviceEdition, top, skip, filter)
             } else {
                 throw AltinnrettigheterProxyKlientException("Feil i altinn-rettigheter-proxy", proxyException)
             }
         } catch (altinnException: AltinnException) {
-            logger.warn("Fikk exception i Altinn med følgende melding '${altinnException.message}'. " +
-                    "Exception fra Altinn håndteres av klient applikasjon")
+            logger.info(
+                "Fikk exception i Altinn med følgende melding '{}'. Exception fra Altinn håndteres av klient applikasjon",
+                altinnException.message
+            )
             throw altinnException
         } catch (exception: Exception) {
-            logger.warn("Fikk exception med følgende melding '${exception.message}'. " +
-                    "Denne skal håndteres av klient applikasjon")
+            logger.info(
+                "Fikk exception med følgende melding '{}'. Denne skal håndteres av klient applikasjon",
+                exception.message
+            )
             throw AltinnrettigheterProxyKlientException("Exception ved kall til proxy", exception)
         }
     }
@@ -258,13 +265,12 @@ class AltinnrettigheterProxyKlient(
                     }
                 }
             } catch (e: ResponseException) {
-                val melding = "Fallback kall mot Altinn feiler med HTTP feil " +
-                        "${e.response.status.value} '${e.response.status.description}'"
-                logger.warn(melding)
+                val melding = "Fallback kall mot Altinn feiler med HTTP feil ${e.response.status.value} '${e.response.status.description}'"
+                logger.info(melding)
                 throw AltinnrettigheterProxyKlientFallbackException(melding, e)
             } catch (e: Exception) {
                 val melding = "Fallback kall mot Altinn feiler med exception: '${e.message}' "
-                logger.warn(melding, e)
+                logger.info(melding, e)
                 throw AltinnrettigheterProxyKlientFallbackException(melding, e)
             }
         }

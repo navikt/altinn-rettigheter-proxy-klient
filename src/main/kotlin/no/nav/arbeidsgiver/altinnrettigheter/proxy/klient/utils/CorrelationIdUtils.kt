@@ -24,9 +24,7 @@ private fun hentKorrelasjonFraKjenteMDCKeys(): String {
         "x_callId"
     )
         .map { MDC.get(it) }
-        .filterNot(String::isNullOrBlank)
-        .firstOrNull()
-        ?: UUID.randomUUID().toString()
+        .firstOrNull { !it.isNullOrBlank()} ?: UUID.randomUUID().toString()
     return correlationId
 }
 

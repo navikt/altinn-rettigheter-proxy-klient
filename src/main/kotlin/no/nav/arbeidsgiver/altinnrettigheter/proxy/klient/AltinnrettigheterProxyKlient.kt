@@ -19,17 +19,20 @@ import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.utils.getCorrelationId
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.utils.withCorrelationId
 import org.slf4j.LoggerFactory
 
-class AltinnrettigheterProxyKlient(
-        private val config: AltinnrettigheterProxyKlientConfig
-) {
-
-    private var klientVersjon: String = ResourceUtils.getKlientVersjon()
-
-    private var httpClient = HttpClient(Apache) {
-        install(JsonFeature) {
-            serializer = JacksonSerializer()
-        }
+private fun defaultHttpClient() = HttpClient(Apache) {
+    install(JsonFeature) {
+        serializer = JacksonSerializer()
     }
+}
+
+class AltinnrettigheterProxyKlient(
+        private val config: AltinnrettigheterProxyKlientConfig,
+        private val httpClient: HttpClient,
+) {
+    constructor(_config: AltinnrettigheterProxyKlientConfig) : this(_config, defaultHttpClient())
+
+    private val klientVersjon: String = ResourceUtils.getKlientVersjon()
+
 
     /**
      * Hent alle organisasjoner i Altinn en bruker har rettigheter i.

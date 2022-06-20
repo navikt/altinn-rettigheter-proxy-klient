@@ -1,12 +1,14 @@
 package no.nav.arbeidsgiver.altinnrettigheter.proxy.klient
 
 import io.ktor.client.*
+import io.ktor.client.call.*
 import io.ktor.client.engine.apache.*
-import io.ktor.client.features.*
-import io.ktor.client.features.json.*
+import io.ktor.client.plugins.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
-import io.ktor.utils.io.jvm.javaio.*
+import io.ktor.serialization.jackson.*
 import kotlinx.coroutines.runBlocking
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.ProxyError
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.error.exceptions.AltinnException
@@ -19,18 +21,42 @@ import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.utils.getCorrelationId
 import no.nav.arbeidsgiver.altinnrettigheter.proxy.klient.utils.withCorrelationId
 import org.slf4j.LoggerFactory
 
-private fun defaultHttpClient() = HttpClient(Apache) {
-    install(JsonFeature) {
-        serializer = JacksonSerializer()
-    }
-}
-
 class AltinnrettigheterProxyKlient(
-        private val config: AltinnrettigheterProxyKlientConfig,
-        private val httpClient: HttpClient,
+    private val config: AltinnrettigheterProxyKlientConfig,
 ) {
-    constructor(_config: AltinnrettigheterProxyKlientConfig) : this(_config, defaultHttpClient())
 
+    private val httpClient: HttpClient = HttpClient(Apache) {
+        expectSuccess = true
+        install(ContentNegotiation) {
+            jackson()
+        }
+        HttpResponseValidator {
+            handleResponseExceptionWithRequest { exception, request ->
+                if (request.url.toString().startsWith(config.altinn?.url!!)) {
+                    // feil fra altinn, trenger ikke parses
+                    return@handleResponseExceptionWithRequest
+                }
+
+                val responseException = exception as? ResponseException ?: return@handleResponseExceptionWithRequest
+                val response = responseException.response
+
+                val proxyError = when (response.contentType()) {
+                    ContentType.Application.Json -> ProxyError.parse(response.bodyAsText(), response.status)
+                    else -> ProxyError(
+                        httpStatus = response.status.value,
+                        melding = responseException.message ?: response.status.toString(),
+                        cause = "ukjent feil"
+                    )
+                }
+
+                if (responseException is ClientRequestException && response.status.value != 404) {
+                    throw AltinnException(proxyError)
+                } else {
+                    throw AltinnrettigheterProxyException(proxyError)
+                }
+            }
+        }
+    }
     private val klientVersjon: String = ResourceUtils.getKlientVersjon()
 
 
@@ -45,16 +71,16 @@ class AltinnrettigheterProxyKlient(
      *   - med Status: 'Active' | 'Inactive' og Type: 'Enterprise' | 'Business' | 'Person', når filtrerPåAktiveOrganisasjoner er 'false'
      */
     fun hentOrganisasjoner(
-            selvbetjeningToken: Token,
-            subject: Subject,
-            filtrerPåAktiveOrganisasjoner: Boolean
+        selvbetjeningToken: Token,
+        subject: Subject,
+        filtrerPåAktiveOrganisasjoner: Boolean
     ): List<AltinnReportee> {
         return hentOrganisasjonerMedEllerUtenRettigheter(
-                selvbetjeningToken,
-                subject,
-                null,
-                null,
-                filtrerPåAktiveOrganisasjoner
+            selvbetjeningToken,
+            subject,
+            null,
+            null,
+            filtrerPåAktiveOrganisasjoner
         )
     }
 
@@ -71,28 +97,28 @@ class AltinnrettigheterProxyKlient(
      *   - med Status: 'Active' | 'Inactive' og Type: 'Enterprise' | 'Business' | 'Person', når filtrerPåAktiveOrganisasjoner er 'false'
      */
     fun hentOrganisasjoner(
-            selvbetjeningToken: Token,
-            subject: Subject,
-            serviceCode: ServiceCode,
-            serviceEdition: ServiceEdition,
-            filtrerPåAktiveOrganisasjoner: Boolean
+        selvbetjeningToken: Token,
+        subject: Subject,
+        serviceCode: ServiceCode,
+        serviceEdition: ServiceEdition,
+        filtrerPåAktiveOrganisasjoner: Boolean
     ): List<AltinnReportee> {
         return hentOrganisasjonerMedEllerUtenRettigheter(
-                selvbetjeningToken,
-                subject,
-                serviceCode,
-                serviceEdition,
-                filtrerPåAktiveOrganisasjoner
+            selvbetjeningToken,
+            subject,
+            serviceCode,
+            serviceEdition,
+            filtrerPåAktiveOrganisasjoner
         )
     }
 
 
     private fun hentOrganisasjonerMedEllerUtenRettigheter(
-            selvbetjeningToken: Token,
-            subject: Subject,
-            serviceCode: ServiceCode?,
-            serviceEdition: ServiceEdition?,
-            filtrerPåAktiveOrganisasjoner: Boolean
+        selvbetjeningToken: Token,
+        subject: Subject,
+        serviceCode: ServiceCode?,
+        serviceEdition: ServiceEdition?,
+        filtrerPåAktiveOrganisasjoner: Boolean
     ): List<AltinnReportee> = withCorrelationId {
         val organisasjoner: ArrayList<AltinnReportee> = ArrayList()
         var detFinnesFlereOrganisasjoner = true
@@ -101,13 +127,13 @@ class AltinnrettigheterProxyKlient(
 
         while (detFinnesFlereOrganisasjoner) {
             val nyeOrganisasjoner = hentOrganisasjonerMedFallbackFunksjonalitet(
-                    selvbetjeningToken,
-                    subject,
-                    serviceCode,
-                    serviceEdition,
-                    DEFAULT_PAGE_SIZE,
-                    organisasjoner.size,
-                    filterValue
+                selvbetjeningToken,
+                subject,
+                serviceCode,
+                serviceEdition,
+                DEFAULT_PAGE_SIZE,
+                organisasjoner.size,
+                filterValue
             )
 
             if (nyeOrganisasjoner.size > DEFAULT_PAGE_SIZE) {
@@ -128,16 +154,23 @@ class AltinnrettigheterProxyKlient(
     }
 
     private fun hentOrganisasjonerMedFallbackFunksjonalitet(
-            selvbetjeningToken: Token,
-            subject: Subject,
-            serviceCode: ServiceCode?,
-            serviceEdition: ServiceEdition?,
-            top: Number,
-            skip: Number,
-            filter: String?
+        selvbetjeningToken: Token,
+        subject: Subject,
+        serviceCode: ServiceCode?,
+        serviceEdition: ServiceEdition?,
+        top: Number,
+        skip: Number,
+        filter: String?
     ): List<AltinnReportee> {
         return try {
-            hentOrganisasjonerViaAltinnrettigheterProxy(selvbetjeningToken, serviceCode, serviceEdition, top, skip, filter)
+            hentOrganisasjonerViaAltinnrettigheterProxy(
+                selvbetjeningToken,
+                serviceCode,
+                serviceEdition,
+                top,
+                skip,
+                filter
+            )
         } catch (proxyException: AltinnrettigheterProxyException) {
             if (config.altinn != null) {
                 logger.info(
@@ -164,12 +197,12 @@ class AltinnrettigheterProxyKlient(
     }
 
     private fun hentOrganisasjonerViaAltinnrettigheterProxy(
-            selvbetjeningToken: Token,
-            serviceCode: ServiceCode?,
-            serviceEdition: ServiceEdition?,
-            top: Number,
-            skip: Number,
-            filter: String?
+        selvbetjeningToken: Token,
+        serviceCode: ServiceCode?,
+        serviceEdition: ServiceEdition?,
+        top: Number,
+        skip: Number,
+        filter: String?
     ): List<AltinnReportee> {
 
         val parametreTilProxy = mutableListOf<Pair<String, String>>().apply {
@@ -195,39 +228,8 @@ class AltinnrettigheterProxyKlient(
                             append(CONSUMER_ID_HEADER_NAME, config.proxy.consumerId)
                         }
                     }
-                }
-            } catch (e: ResponseException) {
-                logger.info("mottok exception med content-type: ${e.response.contentType()}")
-                val proxyError = when (e.response.contentType()) {
-                    ContentType.Application.Json -> {
-                        ProxyError.parse(
-                            e.response.content.toInputStream(),
-                            e.response.status
-                        )
-                    }
-                    else -> {
-                        ProxyError(
-                            httpStatus = e.response.status.value,
-                            melding = e.message ?: e.response.status.toString(),
-                            cause = "ukjent feil"
-                        )
-                    }
-                }
-
-                logger.info("""
-                    Mottok en feil med status '${proxyError.httpStatus}' 
-                    og melding '${proxyError.melding}'
-                    og årsak '${proxyError.cause}'
-                    """.trimIndent()
-                )
-
-                if (e is ClientRequestException && e.response.status.value != 404) {
-                    throw AltinnException(proxyError)
-                } else {
-                    throw AltinnrettigheterProxyException(proxyError)
-                }
+                }.body()
             } catch (e: Exception) {
-                logger.info("feil i kall mot altinn-proxy", e)
                 throw AltinnrettigheterProxyException(
                     ProxyError(
                         0, e.message ?: "ingen message", ""
@@ -238,13 +240,13 @@ class AltinnrettigheterProxyKlient(
     }
 
     private fun hentOrganisasjonerIAltinn(
-            altinnConfig: AltinnConfig,
-            subject: Subject,
-            serviceCode: ServiceCode?,
-            serviceEdition: ServiceEdition?,
-            top: Number,
-            skip: Number,
-            filter: String?
+        altinnConfig: AltinnConfig,
+        subject: Subject,
+        serviceCode: ServiceCode?,
+        serviceEdition: ServiceEdition?,
+        top: Number,
+        skip: Number,
+        filter: String?
     ): List<AltinnReportee> {
         val parametreTilAltinn = mutableListOf<Pair<String, String>>().apply {
             add("ForceEIAuthentication" to "")
@@ -266,15 +268,15 @@ class AltinnrettigheterProxyKlient(
                         append("X-NAV-APIKEY", altinnConfig.altinnApiGwApiKey)
                         append("APIKEY", altinnConfig.altinnApiKey)
                     }
-                }
+                }.body()
             } catch (e: ResponseException) {
-                val melding = "Fallback kall mot Altinn feiler med HTTP feil ${e.response.status.value} '${e.response.status.description}'"
-                logger.info(melding)
-                throw AltinnrettigheterProxyKlientFallbackException(melding, e)
+                throw AltinnrettigheterProxyKlientFallbackException(
+                    "Fallback kall mot Altinn feiler med HTTP feil ${e.response.status.value} '${e.response.status.description}'", e
+                )
             } catch (e: Exception) {
-                val melding = "Fallback kall mot Altinn feiler med exception: '${e.message}' "
-                logger.info(melding, e)
-                throw AltinnrettigheterProxyKlientFallbackException(melding, e)
+                throw AltinnrettigheterProxyKlientFallbackException(
+                    "Fallback kall mot Altinn feiler med exception: '${e.message}' ", e
+                )
             }
         }
     }
@@ -292,10 +294,10 @@ class AltinnrettigheterProxyKlient(
         const val PROXY_ENDEPUNKT_API_ORGANISASJONER = "/v2/organisasjoner"
 
         fun getAltinnrettigheterProxyURL(basePath: String, endepunkt: String) =
-                basePath.removeSuffix("/") + endepunkt
+            basePath.removeSuffix("/") + endepunkt
 
         fun getAltinnURL(basePath: String) =
-                basePath.removeSuffix("/") + "/ekstern/altinn/api/serviceowner/reportees"
+            basePath.removeSuffix("/") + "/ekstern/altinn/api/serviceowner/reportees"
     }
 }
 

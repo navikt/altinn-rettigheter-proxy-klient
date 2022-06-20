@@ -6,7 +6,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.http.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.InputStream
 
 open class ProxyError(
     val httpStatus: Int,
@@ -17,9 +16,8 @@ open class ProxyError(
     companion object {
         private val mapper = jacksonObjectMapper()
 
-        fun parse(body: InputStream, httpStatus: HttpStatusCode): ProxyError {
-            val inputAsString = body.bufferedReader().use { it.readText() }
-            val proxyResponseIErrorBody = parseBody(inputAsString)
+        fun parse(body: String, httpStatus: HttpStatusCode): ProxyError {
+            val proxyResponseIErrorBody = parseBody(body)
             val melding = when {
                 proxyResponseIErrorBody.message.isNotBlank() -> proxyResponseIErrorBody.message
                 else -> httpStatus.toString()

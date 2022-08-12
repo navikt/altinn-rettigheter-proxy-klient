@@ -189,7 +189,7 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
         )
         wireMockServer.stubFor(
                 `altinn returnerer 400 Bad Request`(
-                        "400: The ServiceCode=9999 and ServiceEditionCode=1 are either invalid or non-existing",
+                        "The ServiceCode=9999 and ServiceEditionCode=1 are either invalid or non-existing",
                         INVALID_SERVICE_CODE,
                         SERVICE_EDITION)
         )
@@ -205,10 +205,42 @@ class AltinnrettigheterProxyKlientFeilhåndteringIntegrationTest {
             fail("Skulle har fått en exception")
         } catch (e: Exception) {
             assertEquals(
-                    "Fallback kall mot Altinn feiler med HTTP feil 400 'Bad Request'",
+                    "Fallback kall mot Altinn feiler med HTTP feil 400 'The ServiceCode=9999 and ServiceEditionCode=1 are either invalid or non-existing'",
                     e.message
             )
         }
+
+        wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(INVALID_SERVICE_CODE, SERVICE_EDITION))
+        wireMockServer.verify(`altinn mottar riktig request`(INVALID_SERVICE_CODE, SERVICE_EDITION, FNR_INNLOGGET_BRUKER))
+    }
+
+    @Test
+    fun `hentOrganisasjoner() returnerer tom liste dersom Altinn svarer med 400 mangler profil`() {
+        wireMockServer.stubFor(
+            `altinn-rettigheter-proxy returnerer en feil av type 'httpStatus' med 'melding' og 'cause' i response body`(
+                INVALID_SERVICE_CODE,
+                SERVICE_EDITION,
+                "0",
+                HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                "Internal Server Error",
+                "ukjent feil"
+            )
+        )
+        wireMockServer.stubFor(
+            `altinn returnerer 400 Bad Request`(
+                "User profile could not be found for ***********. User profile is created at first login to the Altinn.no portal",
+                INVALID_SERVICE_CODE,
+                SERVICE_EDITION)
+        )
+
+        val organisasjoner = klient.hentOrganisasjoner(
+            selvbetjeningToken,
+            Subject(FNR_INNLOGGET_BRUKER),
+            ServiceCode(INVALID_SERVICE_CODE),
+            ServiceEdition(SERVICE_EDITION),
+            true
+        )
+        assertEquals(listOf(), organisasjoner)
 
         wireMockServer.verify(`altinn-rettigheter-proxy mottar riktig request`(INVALID_SERVICE_CODE, SERVICE_EDITION))
         wireMockServer.verify(`altinn mottar riktig request`(INVALID_SERVICE_CODE, SERVICE_EDITION, FNR_INNLOGGET_BRUKER))

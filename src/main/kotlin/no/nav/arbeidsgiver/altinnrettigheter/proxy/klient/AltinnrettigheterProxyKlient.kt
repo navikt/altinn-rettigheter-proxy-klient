@@ -214,12 +214,12 @@ class AltinnrettigheterProxyKlient(
         }
 
 
-        val url = getAltinnrettigheterProxyURL(config.proxy.url, PROXY_ENDEPUNKT_API_ORGANISASJONER) +
+        val altinnProxyUrl = getAltinnrettigheterProxyURL(config.proxy.url, PROXY_ENDEPUNKT_API_ORGANISASJONER) +
                 "?" + parametreTilProxy.formUrlEncode()
 
         return runBlocking {
             try {
-                httpClient.get(url) {
+                httpClient.get(altinnProxyUrl) {
                     headers {
                         append("Authorization", "Bearer ${selvbetjeningToken.value}")
                         append(PROXY_KLIENT_VERSJON_HEADER_NAME, klientVersjon)
@@ -258,11 +258,11 @@ class AltinnrettigheterProxyKlient(
             if (filter != null) add("\$filter" to filter)
         }
 
-        val url = getAltinnURL(altinnConfig.url) + "?" + parametreTilAltinn.formUrlEncode()
+        val altinnUrl = getAltinnURL(altinnConfig.url) + "?" + parametreTilAltinn.formUrlEncode()
 
         return runBlocking {
             try {
-                httpClient.get(url) {
+                httpClient.get(altinnUrl) {
                     headers {
                         append(CORRELATION_ID_HEADER_NAME, getCorrelationId())
                         append("X-NAV-APIKEY", altinnConfig.altinnApiGwApiKey)
@@ -270,9 +270,13 @@ class AltinnrettigheterProxyKlient(
                     }
                 }.body()
             } catch (e: ResponseException) {
-                throw AltinnrettigheterProxyKlientFallbackException(
-                    "Fallback kall mot Altinn feiler med HTTP feil ${e.response.status.value} '${e.response.status.description}'", e
-                )
+                if (e.manglerAltinnProfil()) {
+                    listOf()
+                } else {
+                    throw AltinnrettigheterProxyKlientFallbackException(
+                        "Fallback kall mot Altinn feiler med HTTP feil ${e.response.status.value} '${e.response.status.description}'", e
+                    )
+                }
             } catch (e: Exception) {
                 throw AltinnrettigheterProxyKlientFallbackException(
                     "Fallback kall mot Altinn feiler med exception: '${e.message}' ", e
@@ -299,5 +303,8 @@ class AltinnrettigheterProxyKlient(
         fun getAltinnURL(basePath: String) =
             basePath.removeSuffix("/") + "/ekstern/altinn/api/serviceowner/reportees"
     }
+
+    private fun ResponseException.manglerAltinnProfil() =
+        response.status.value == 400 && response.status.description.contains("User profile")
 }
 

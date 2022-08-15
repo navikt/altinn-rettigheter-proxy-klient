@@ -187,6 +187,7 @@ class AltinnrettigheterProxyKlientIntegrationTestUtils {
                     ))
                     .willReturn(aResponse()
                             .withStatus(400)
+                            .withStatusMessage(melding)
                             .withHeader("Content-Type", "application/json")
                             .withBody("\"message\": \"${melding}\"")
                     )

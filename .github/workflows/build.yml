@@ -18,14 +18,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-
-      - name: Set up cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          cache: maven
 
       - name: Run clean install (med tests)
         run: mvn clean install

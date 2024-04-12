@@ -28,19 +28,22 @@
     </developers>
 
     <properties>
-        <java.version>11</java.version>
-        <kotlin.version>1.6.10</kotlin.version>
-        <ktor.version>2.0.2</ktor.version>
-        <jackson-module-kotlin.version>2.9.9</jackson-module-kotlin.version>
-        <slf4j.version>1.7.32</slf4j.version>
-        <maven.compiler.source>1.11</maven.compiler.source>
-        <maven.compiler.target>1.11</maven.compiler.target>
-        <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
-        <maven-source-plugin.version>2.2.1</maven-source-plugin.version>
-        <maven-assembly-plugin.version>3.1.1</maven-assembly-plugin.version>
-        <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
-        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
+        <!-- Compile -->
+        <java.version>17</java.version>
+        <kotlin.version>1.9.22</kotlin.version>
+        <maven.compiler.release>17</maven.compiler.release>
+        <!-- Dependencies -->
+        <jackson-core.libs.version>2.17.0</jackson-core.libs.version>
+        <ktor.version>2.3.10</ktor.version>
+        <slf4j.version>2.0.12</slf4j.version>
+        <wiremock.version>2.26.3</wiremock.version>
+        <!-- Project build & release -->
+        <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
+        <maven-gpg-plugin.version>3.2.2</maven-gpg-plugin.version>
+        <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
+        <maven-release-plugin.version>3.0.1</maven-release-plugin.version>
+        <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
+        <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -229,17 +232,17 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.13.1</version>
+            <version>${jackson-core.libs.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.13.4.2</version>
+            <version>${jackson-core.libs.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.13.1</version>
+            <version>${jackson-core.libs.version}</version>
         </dependency>
 
         <dependency>
@@ -257,14 +260,14 @@
         <!-- Test -->
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-test</artifactId>
+            <artifactId>kotlin-test-junit5</artifactId>
             <version>${kotlin.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.github.tomakehurst</groupId>
             <artifactId>wiremock</artifactId>
-            <version>2.26.3</version>
+            <version>${wiremock.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

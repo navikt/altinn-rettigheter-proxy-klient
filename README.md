@@ -6,12 +6,23 @@ Klienten vil forsøke å kontakte Altinn via proxyen, som tilbyr caching på tve
 
 # Bruk av AltinnrettigheterProxyKlient 
 
-Biblioteket importeres i klientapplikasjon slik (eksempel med maven)
+Biblioteket kan hentes fra JitPack. Legg til følgende i pom.xml
+```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+```
+
+
+Biblioteket importeres i klientapplikasjon slik
 ```xml
 <dependency>
-  <groupId>no.nav.arbeidsgiver</groupId>
-  <artifactId>altinn-rettigheter-proxy-klient</artifactId>
-  <version>${altinn-rettigheter-proxy-klient.version}</version>
+    <groupId>com.github.navikt</groupId>
+    <artifactId>altinn-rettigheter-proxy-klient</artifactId>
+    <version>altinn-rettigheter-proxy-klient-5.0.0</version>
 </dependency>
 ```
 
@@ -92,9 +103,10 @@ Lag en ny release med `mvn release:prepare`:
 Kommandoen skal pushe en ny tag på GitHub. Da kan `Build and publish` action starte og release artifactene til Maven central.
 
 ## Publisere til Maven Central
-Credentials som skal til for å kunne publisere til Maven Central provisjoneres av [publish-maven-central](https://github.com/navikt/publish-maven-central)
 
-Tilgjengelige versjoner: https://repo1.maven.org/maven2/no/nav/arbeidsgiver/altinn-rettigheter-proxy-klient/
+Denne klienten publiseres ikke lenger til Maven Central.
+Dersom dette er et behov er PR velkommen.
+
 # Henvendelser
 
 Spørsmål knyttet til koden eller prosjektet kan rettes mot:

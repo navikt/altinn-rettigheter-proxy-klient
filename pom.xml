@@ -33,7 +33,7 @@
         <kotlin.version>2.0.21</kotlin.version>
         <maven.compiler.release>17</maven.compiler.release>
         <!-- Dependencies -->
-        <jackson-core.libs.version>2.18.1</jackson-core.libs.version>
+        <jackson-core.libs.version>2.18.6</jackson-core.libs.version>
         <ktor.version>3.0.1</ktor.version>
         <slf4j.version>2.0.12</slf4j.version>
         <wiremock.version>2.26.3</wiremock.version>
